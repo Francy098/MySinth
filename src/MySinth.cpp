@@ -1,5 +1,8 @@
 #include "ABC.hpp"
-#include "dsp/digital.hpp","Osc_MySinth.hpp"
+#include "dsp/digital.hpp"
+#include "Osc_MySinth.hpp"
+#include "LFO_MySinth.hpp"
+
 
 #define TRIG_TIME 1e-3f
 #define Fs 44100 //Hz -> Freq di campionamento
@@ -46,6 +49,7 @@ struct MySinth : Module {
 		phase1 = 0.0f;
 		phase2 = 0.0f;
 		sampleRate = 44100.0f;
+		lfo.reset(0.0); // reset phase to 0
 	}
 
 	void onSampleRateChange() override {
@@ -59,6 +63,9 @@ struct MySinth : Module {
 	float phase2;
 	float sampleRate;
 
+	// LFO instance (value)
+	MySinthLFO lfo;
+
 	void process(const ProcessArgs &args) override;
 };
 
@@ -68,8 +75,17 @@ void MySinth::process(const ProcessArgs &args) {
         float Voct_input = inputs[VOCT].getVoltage();
         float level1 = params[LEVEL1].getValue();
         float level2 = params[LEVEL2].getValue();
+        float lfo_amount = params[LFO_AMOUNT].getValue();
+        float lfo_rate = params[RATE].getValue();
+        
+		// LFO processing (use member lfo)
+		lfo.setSampleRate(args.sampleRate);
+		lfo.setRate(lfo_rate);
+		float lfo_out = lfo.process(); // -1..1
+		outputs[LFO_OUT].setVoltage(5.0f * lfo_out); // LFO output scaled to +/-5V
 
-		// Compute frequencies
+
+        // Compute frequencies
 		// Voct input is volts per octave: 1V -> octave -> freq multiplier = 2^(Voct)
 		float freq1 = pitch * std::pow(2.0f, Voct_input); 
 		float freq2 = freq1 * std::pow(2.0f, detune / 12.0f);
@@ -111,7 +127,7 @@ void MySinth::process(const ProcessArgs &args) {
 	struct MySinthWidget : ModuleWidget {
 		MySinthWidget(MySinth * module);
 	};
-    
+
 	MySinthWidget::MySinthWidget(MySinth * module) {
 
 		setModule(module);
@@ -203,10 +219,8 @@ void MySinth::process(const ProcessArgs &args) {
 			addChild(lblV);
 		}
 		addInput(createInput<PJ3410Port>(Vec(115, 70+75+70+40+60), module, MySinth::VOCT));
-        /*
-
 		// Outputs last at bottom
-		/*{
+	/*	{
 			ATextLabel * lblOut1 = new ATextLabel(Vec(40, 260));
 			lblOut1->setText("OUT1");
 			addChild(lblOut1);

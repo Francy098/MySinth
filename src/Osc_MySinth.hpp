@@ -1,9 +1,9 @@
 #pragma once //Serve al compilatore per evitare inclusioni multiple
 
-#include <algorithm> // for std::clamp
+#include <algorithm>
 #include <cmath>     // for std::floor
 
-namespace MySinth {
+namespace MySinthOsc {
 
 // Square oscillator: uscita +1/-1, duty adjustable (0..1) - (default 50%)
 class SquareOsc {
@@ -11,7 +11,7 @@ public:
 	SquareOsc() = default;
 	void setSampleRate(double sr) { sampleRate = sr; updateInc(); } //aggiornamento sample rate
 	void setFrequency(double f) { frequency = f; updateInc(); } //aggiornamento frequenza
-	void setPulseWidth(double pw) { pulseWidth = std::clamp(pw, 0.0, 1.0); } //aggiornamento duty cycle
+	void setPulseWidth(double pw) { pulseWidth = std::max(0.0, std::min(1.0, pw)); } //aggiornamento duty cycle
 	void reset(double ph = 0.0) { phase = ph - std::floor(ph); }    // reset fase
 	float process() {
 		phase += phaseInc;
@@ -49,4 +49,4 @@ private:
 	void updateInc() { phaseInc = (sampleRate > 0.0) ? (frequency / sampleRate) : 0.0; }
 };
 
-} // namespace MySinth
+} // namespace MySinthOsc
