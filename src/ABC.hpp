@@ -62,6 +62,9 @@ extern Model * modelDerivator1;
 extern Model * modelRCLowPassFilter;
 extern Model * modelIntegrator1;
 
+//Progetto MySinth
+extern Model * modelMySinth;
+
 struct xpander16f {
 	float outs[16];
 };

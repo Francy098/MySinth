@@ -55,4 +55,7 @@ void init(rack::Plugin *p) {
 	p->addModel(modelDerivator1);
 	p->addModel(modelRCLowPassFilter);
 	p->addModel(modelIntegrator1);
+	
+	//Progetto MySinth
+	p->addModel(modelMySinth);
 }

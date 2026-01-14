@@ -243,6 +243,14 @@
       "tags": [
         "VCF"
       ]
-    }  
+    },
+    {
+      "slug": "MySinth",
+      "name": "MySinth",
+      "description": "Sintetizzatore sottrattivo. Progetto DCMPSS",
+      "tags": [
+        "VCF"
+      ]
+    }   
   ]
 }
