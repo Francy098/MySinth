@@ -6,8 +6,8 @@
 
 struct MySinth : Module {
 	enum ParamIds {
-        F0,    //potenziometro di frequenza
-		PITCH, //potenziometro di pitch
+		PITCH, //potenziometro di pitch (FREQUENZA)
+        DETUNE, //potenziometro di detune in semitoni
         OSC_WAVE1, //selettore forma d'onda(CKSS): 0 = saw, 1 = square
 		OSC_WAVE2,
         NUM_PARAMS,
@@ -27,12 +27,13 @@ struct MySinth : Module {
 
 	MySinth() { //---------------- Finire a configurare i parametri (potenziometri...)
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS,NUM_LIGHTS);
-		configParam(PITCH, -12.0f, 12.0f, 0.0f, "PITCH"); //Da -12 a 12 semitoni
-		configParam(F0, 100.0f, 15000.0f, 100.0f,"F0");   // 100Hz <= F0 <= 20kHz
+		configParam(DETUNE, -12.0f, 12.0f, 0.0f, "DETUNE"); //Da -12 a 12 semitoni
+		configParam(PITCH, 100.0f, 15000.0f, 100.0f,"PITCH"); // 100Hz <= PITCH <= 20kHz
 		configParam(OSC_WAVE1, 0.0f, 1.0f, 0.0f, "Waveform"); //Selettore forma d'onda (0=saw, 1=square).
 		configParam(OSC_WAVE2, 0.0f, 1.0f, 0.0f, "Waveform"); //Selettore forma d'onda (0=saw, 1=square).
 
-		phase = 0.0f;
+		phase1 = 0.0f;
+		phase2 = 0.0f;
 		sampleRate = 44100.0f;
 	}
 
@@ -43,34 +44,50 @@ struct MySinth : Module {
 	float Ts= 1.f/Fs; //Periodo campionamento
 
 	// internal oscillator state
-	float phase;
+	float phase1;
+	float phase2;
 	float sampleRate;
 
 	void process(const ProcessArgs &args) override;
 };
 
 void MySinth::process(const ProcessArgs &args) {
-		float f0 = params[F0].getValue();
 		float pitch = params[PITCH].getValue();
-		float freq = f0 * std::pow(2.0f, pitch / 12.0f);
+        float detune = params[DETUNE].getValue();
+        float Voct_input = inputs[VOCT].getVoltage();
+        
+		// Compute frequencies
+		// Voct input is volts per octave: 1V -> octave -> freq multiplier = 2^(Voct)
+		float freq1 = pitch * std::pow(2.0f, Voct_input); 
+		float freq2 = freq1 * std::pow(2.0f, detune / 12.0f);
 
-		float sr = args.sampleRate;
-		if (sr <= 0.0f) sr = sampleRate;
-		float phaseInc = freq / sr;
+		// Phase increments
+		float sr = args.sampleRate; 
+		if (sr <= 0.0f) sr = sampleRate;    
+		float phaseInc1 = freq1 / sr; 
+		float phaseInc2 = freq2 / sr; 
 
-		phase += phaseInc;
-		if (phase >= 1.0f) phase -= std::floor(phase);
+		// Update phases independently
+		phase1 += phaseInc1;
+		if (phase1 >= 1.0f) phase1 -= std::floor(phase1);
 
-		float saw = 2.0f * phase - 1.0f;
-		float sq = (phase < 0.5f) ? 1.0f : -1.0f;
+		phase2 += phaseInc2;
+		if (phase2 >= 1.0f) phase2 -= std::floor(phase2);
+
+		// Wave generation per oscillator
+		float saw1 = 2.0f * phase1 - 1.0f;
+		float sq1 = (phase1 < 0.5f) ? 1.0f : -1.0f;
+
+		float saw2 = 2.0f * phase2 - 1.0f;
+		float sq2 = (phase2 < 0.5f) ? 1.0f : -1.0f;
 
 		float waveSel1 = params[OSC_WAVE1].getValue();
 		float waveSel2 = params[OSC_WAVE2].getValue();
-		float out_osc1 = (waveSel1 < 0.5f) ? saw : sq;
-		float out_osc2 = (waveSel2 < 0.5f) ? saw : sq;
+		float out_osc1 = (waveSel1 < 0.5f) ? saw1 : sq1;
+		float out_osc2 = (waveSel2 < 0.5f) ? saw2 : sq2;
 
 		outputs[OUT1].setVoltage(5.0f * out_osc1);
-        outputs[OUT2].setVoltage(5.0f * out_osc2);  
+		outputs[OUT2].setVoltage(5.0f * out_osc2);
 	}
 
 
@@ -96,18 +113,18 @@ void MySinth::process(const ProcessArgs &args) {
 
 		// Primary controls (shared F0 / PITCH)
 		{
-			ATextLabel * lblF0 = new ATextLabel(Vec(30, 40));
-			lblF0->setText("F0");
+			ATextLabel * lblF0 = new ATextLabel(Vec(27, 40));
+			lblF0->setText("Pitch");
 			addChild(lblF0);
 		}
-		addParam(createParam<RoundBlackKnob>(Vec(30, 70), module, MySinth::F0));
+		addParam(createParam<RoundBlackKnob>(Vec(30, 70), module, MySinth::PITCH));
 
 		{
-			ATextLabel * lblPitch = new ATextLabel(Vec(30, 110));
-			lblPitch->setText("PITCH");
+			ATextLabel * lblPitch = new ATextLabel(Vec(27, 110));
+			lblPitch->setText("Detune");
 			addChild(lblPitch);
 		}
-		addParam(createParam<RoundBlackKnob>(Vec(30, 140), module, MySinth::PITCH));
+		addParam(createParam<RoundBlackKnob>(Vec(30, 140), module, MySinth::DETUNE));
 
 		// Two waveform selectors in two columns
 		{
