@@ -2,21 +2,21 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://creativecommons.org/ns#"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:xlink="http://www.w3.org/1999/xlink"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="60.959999mm"
+   width="175.96001mm"
    height="128.5mm"
-   viewBox="0 0 60.959997 128.50004"
+   viewBox="0 0 175.96001 128.50004"
    version="1.1"
    id="svg4541"
    sodipodi:docname="ATemplate.svg"
-   inkscape:version="0.91 r13725">
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
   <defs
      id="defs4535">
     <pattern
@@ -39,8 +39,8 @@
        clipPathUnits="userSpaceOnUse"
        id="clipPath6287">
       <path
-         style="opacity:1;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.82204723;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
-         d="m -126.74051,80.042564 83.815248,0 c 1.108,0 2,0.892 2,2 l 0,83.815246 c 0,1.108 -0.892,2 -2,2 l -83.815248,0 c -1.108,0 -2,-0.892 -2,-2 l 0,-83.815246 c 0,-1.108 0.892,-2 2,-2 z"
+         style="opacity:1;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.822047;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+         d="m -126.74051,80.042564 h 83.815248 c 1.108,0 2,0.892 2,2 v 83.815246 c 0,1.108 -0.892,2 -2,2 h -83.815248 c -1.108,0 -2,-0.892 -2,-2 V 82.042564 c 0,-1.108 0.892,-2 2,-2 z"
          id="path6289"
          inkscape:connector-curvature="0" />
     </clipPath>
@@ -53,19 +53,19 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="0.9094738"
-     inkscape:cx="220.03686"
-     inkscape:cy="275.88786"
+     inkscape:cx="219.90738"
+     inkscape:cy="275.43399"
      inkscape:document-units="mm"
-     inkscape:current-layer="g13383"
+     inkscape:current-layer="g13224"
      showgrid="true"
      fit-margin-top="0"
      fit-margin-left="0"
      fit-margin-right="0"
      fit-margin-bottom="0"
-     inkscape:window-width="1561"
-     inkscape:window-height="848"
-     inkscape:window-x="39"
-     inkscape:window-y="29"
+     inkscape:window-width="1920"
+     inkscape:window-height="991"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
      inkscape:window-maximized="1"
      units="mm"
      inkscape:snap-page="true"
@@ -82,11 +82,19 @@
      inkscape:snap-global="true"
      inkscape:snap-grids="false"
      inkscape:snap-nodes="false"
-     inkscape:snap-to-guides="false">
+     inkscape:snap-to-guides="false"
+     inkscape:showpageshadow="2"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1">
     <inkscape:grid
        type="xygrid"
        id="grid4330"
-       dotted="true" />
+       dotted="true"
+       originx="0"
+       originy="0"
+       spacingy="1"
+       spacingx="1"
+       units="mm" />
   </sodipodi:namedview>
   <metadata
      id="metadata4538">
@@ -96,7 +104,6 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -104,42 +111,42 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(10.012165,-71.088653)">
+     transform="translate(10.303084,-70.506815)">
     <g
        transform="matrix(0.27602379,0,0,0.27602379,354.09618,57.736346)"
        id="g13122"
-       style="stroke-width:0.9585526">
+       style="stroke-width:0.958553">
       <g
          transform="translate(-167.07644,-20.557569)"
          id="g13178"
-         style="stroke-width:0.91882312">
+         style="stroke-width:0.918823">
         <g
            transform="translate(-99.2314,6.0949065)"
            id="g13224"
-           style="stroke-width:0.88074034">
+           style="stroke-width:0.88074">
           <g
              transform="translate(-315.65411,137.78158)"
              id="g13271"
-             style="stroke-width:0.84423596">
+             style="stroke-width:0.844236">
             <g
                transform="translate(-332.2261,26.059316)"
                id="g13383"
-               style="stroke-width:0.80924457">
+               style="stroke-width:0.809245">
               <rect
-                 style="fill:#f0f0f0;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1.02245641px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+                 style="fill:#f0f0f0;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1.73381px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
                  id="rect3432"
-                 width="220.85056"
+                 width="635.05841"
                  height="465.53973"
                  x="-404.9314"
                  y="-101.00451" />
               <g
                  id="text5024"
-                 style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:10.2245636px;line-height:125%;font-family:'CMU Serif';-inkscape-font-specification:'CMU Serif Medium';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.63762635;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+                 style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:10.2246px;line-height:125%;font-family:'CMU Serif';-inkscape-font-specification:'CMU Serif Medium';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.637626;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
                  transform="translate(-188.93134,0.28519852)" />
               <rect
-                 style="fill:#aaccff;fill-opacity:1;stroke:none"
+                 style="fill:#aaccff;fill-opacity:1;stroke:none;stroke-width:1.37226"
                  id="rect5679"
-                 width="220.85056"
+                 width="635.05841"
                  height="5.5646477"
                  x="-404.9314"
                  y="358.97061" />

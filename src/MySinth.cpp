@@ -8,15 +8,17 @@ struct MySinth : Module {
 	enum ParamIds {
         F0,    //potenziometro di frequenza
 		PITCH, //potenziometro di pitch
-        OSC_WAVE, //selettore forma d'onda(CKSS): 0 = saw, 1 = square
-		NUM_PARAMS,
+        OSC_WAVE1, //selettore forma d'onda(CKSS): 0 = saw, 1 = square
+		OSC_WAVE2,
+        NUM_PARAMS,
 	};
 	enum InputIds {
         VOCT,   //V/Oct input
 		NUM_INPUTS,
 	};
-	enum OutputIds {
-		OUT,
+	enum OutputIds { 
+        OUT1,   //Output Osc 1
+        OUT2,   //Output Osc 2 
 		NUM_OUTPUTS,
 	};
 	enum LightsIds { //luce estetica
@@ -27,7 +29,8 @@ struct MySinth : Module {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS,NUM_LIGHTS);
 		configParam(PITCH, -12.0f, 12.0f, 0.0f, "PITCH"); //Da -12 a 12 semitoni
 		configParam(F0, 100.0f, 15000.0f, 100.0f,"F0");   // 100Hz <= F0 <= 20kHz
-		configParam(OSC_WAVE, 0.0f, 1.0f, 0.0f, "Waveform"); //Selettore forma d'onda (0=saw, 1=square).
+		configParam(OSC_WAVE1, 0.0f, 1.0f, 0.0f, "Waveform"); //Selettore forma d'onda (0=saw, 1=square).
+		configParam(OSC_WAVE2, 0.0f, 1.0f, 0.0f, "Waveform"); //Selettore forma d'onda (0=saw, 1=square).
 
 		phase = 0.0f;
 		sampleRate = 44100.0f;
@@ -61,10 +64,13 @@ void MySinth::process(const ProcessArgs &args) {
 		float saw = 2.0f * phase - 1.0f;
 		float sq = (phase < 0.5f) ? 1.0f : -1.0f;
 
-		float waveSel = params[OSC_WAVE].getValue();
-		float outSample = (waveSel < 0.5f) ? saw : sq;
+		float waveSel1 = params[OSC_WAVE1].getValue();
+		float waveSel2 = params[OSC_WAVE2].getValue();
+		float out_osc1 = (waveSel1 < 0.5f) ? saw : sq;
+		float out_osc2 = (waveSel2 < 0.5f) ? saw : sq;
 
-		outputs[OUT].setVoltage(5.0f * outSample);
+		outputs[OUT1].setVoltage(5.0f * out_osc1);
+        outputs[OUT2].setVoltage(5.0f * out_osc2);  
 	}
 
 
@@ -80,7 +86,7 @@ void MySinth::process(const ProcessArgs &args) {
 
 		setModule(module);
 		setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/ATemplate.svg")));
-		box.size = Vec(6*RACK_GRID_WIDTH, RACK_GRID_HEIGHT);
+		box.size = Vec(30*RACK_GRID_WIDTH, RACK_GRID_HEIGHT);
 
 		{
 			ATitle * title = new ATitle(box.size.x);
@@ -88,28 +94,50 @@ void MySinth::process(const ProcessArgs &args) {
 			addChild(title);
 		}
 
-		{   // F0 label
-			ATextLabel * title = new ATextLabel(Vec(30, 40));
-			title->setText("F0");
-			addChild(title);
+		// Primary controls (shared F0 / PITCH)
+		{
+			ATextLabel * lblF0 = new ATextLabel(Vec(30, 40));
+			lblF0->setText("F0");
+			addChild(lblF0);
 		}
-
-		{ // PITCH label
-			ATextLabel * title = new ATextLabel(Vec(30, 110));
-			title->setText("PITCH");
-			addChild(title);
-		}
+		addParam(createParam<RoundBlackKnob>(Vec(30, 70), module, MySinth::F0));
 
 		{
-			ATextLabel * title = new ATextLabel(Vec(30, 180));
-			title->setText("OUT");
-			addChild(title);
+			ATextLabel * lblPitch = new ATextLabel(Vec(30, 110));
+			lblPitch->setText("PITCH");
+			addChild(lblPitch);
 		}
-
-		addParam(createParam<RoundBlackKnob>(Vec(30, 70), module, MySinth::F0));
 		addParam(createParam<RoundBlackKnob>(Vec(30, 140), module, MySinth::PITCH));
-		addParam(createParam<CKSS>(Vec(38, 160), module, MySinth::OSC_WAVE));
-		addOutput(createOutput<PJ3410Port>(Vec(30, 210), module, MySinth::OUT));
+
+		// Two waveform selectors in two columns
+		{
+			ATextLabel * lbl1 = new ATextLabel(Vec(18, 150));
+			lbl1->setText("OSC 1");
+			addChild(lbl1);
+		}
+		addParam(createParam<CKSS>(Vec(18, 170), module, MySinth::OSC_WAVE1));
+
+		{
+			ATextLabel * lbl2 = new ATextLabel(Vec(78, 150));
+			lbl2->setText("OSC 2");
+			addChild(lbl2);
+		}
+		addParam(createParam<CKSS>(Vec(78, 170), module, MySinth::OSC_WAVE2));
+
+		// Outputs under each oscillator column
+		{
+			ATextLabel * lblOut1 = new ATextLabel(Vec(18, 205));
+			lblOut1->setText("OUT1");
+			addChild(lblOut1);
+		}
+		addOutput(createOutput<PJ3410Port>(Vec(18, 225), module, MySinth::OUT1));
+
+		{
+			ATextLabel * lblOut2 = new ATextLabel(Vec(78, 205));
+			lblOut2->setText("OUT2");
+			addChild(lblOut2);
+		}
+		addOutput(createOutput<PJ3410Port>(Vec(78, 225), module, MySinth::OUT2));
 	}
 
 	Model *modelMySinth = createModel<MySinth, MySinthWidget>("MySinth");
