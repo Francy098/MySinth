@@ -155,6 +155,12 @@ void MySinth::process(const ProcessArgs &args) {
 			addChild(lblOut2);
 		}
 		addOutput(createOutput<PJ3410Port>(Vec(78, 225), module, MySinth::OUT2));
+	    {        
+			ATextLabel * lblOut2 = new ATextLabel(Vec(30, 260));    // V/Oct input
+			lblOut2->setText("V/Oct");
+			addChild(lblOut2);
+		}
+        addInput(createInput<PJ3410Port>(Vec(30, 280), module, MySinth::VOCT));
 	}
 
 	Model *modelMySinth = createModel<MySinth, MySinthWidget>("MySinth");
