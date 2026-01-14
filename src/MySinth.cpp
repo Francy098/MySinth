@@ -6,12 +6,12 @@
 
 struct MySinth : Module {
 	enum ParamIds {
-		PITCH, //potenziometro di pitch (FREQUENZA)
-        DETUNE, //potenziometro di detune in semitoni
-        OSC_WAVE1, //selettore forma d'onda(CKSS) per osc1: 0 = saw, 1 = square
-		OSC_WAVE2,  //selettore forma d'onda(CKSS) per osc2: 0 = saw, 1 = square
-        LEVEL1, //livello di uscita osc1
-        LEVEL2, //livello di uscita osc2
+			PITCH, // potenziometro di pitch (FREQUENZA)
+            DETUNE, // potenziometro di detune in semitoni
+            LEVEL1, // level controllo per osc1 (0..1)
+            LEVEL2, // level controllo per osc2 (0..1)
+			OSC_WAVE1, // selettore forma d'onda (CKSS): 0 = saw, 1 = square
+			OSC_WAVE2,  // selettore forma d'onda (CKSS): 0 = saw, 1 = square
         NUM_PARAMS,
 	};
 	enum InputIds {
@@ -29,12 +29,12 @@ struct MySinth : Module {
 
 	MySinth() { //---------------- Finire a configurare i parametri (potenziometri...)
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS,NUM_LIGHTS);
-		configParam(DETUNE, -12.0f, 12.0f, 0.0f, "DETUNE"); //Da -12 a 12 semitoni
-		configParam(PITCH, 100.0f, 15000.0f, 100.0f,"PITCH"); // 100Hz <= PITCH <= 20kHz
-		configParam(OSC_WAVE1, 0.0f, 1.0f, 0.0f, "Waveform"); //Selettore forma d'onda (0=saw, 1=square).
-		configParam(OSC_WAVE2, 0.0f, 1.0f, 0.0f, "Waveform"); //Selettore forma d'onda (0=saw, 1=square).
-		configParam(LEVEL1, 0.0f, 1.0f, 1.0f, "Level"); //Livello di uscita osc1
-		configParam(LEVEL2, 0.0f, 1.0f, 1.0f, "Level"); //Livello di uscita osc2
+		configParam(DETUNE, -12.0f, 12.0f, 0.0f, "DETUNE"); // Da -12 a 12 semitoni
+		configParam(PITCH, 20.0f, 20000.0f, 440.0f, "PITCH"); // base frequency
+		configParam(LEVEL1, 0.0f, 1.0f, 1.0f, "LEVEL1");    //Livello di uscita osc1
+		configParam(LEVEL2, 0.0f, 1.0f, 1.0f, "LEVEL2");    //Livello di uscita osc2
+		configParam(OSC_WAVE1, 0.0f, 1.0f, 0.0f, "Waveform"); // selettore forma d'onda (0=saw, 1=square)
+		configParam(OSC_WAVE2, 0.0f, 1.0f, 0.0f, "Waveform"); // selettore forma d'onda (0=saw, 1=square)
 
 		phase1 = 0.0f;
 		phase2 = 0.0f;
@@ -104,7 +104,7 @@ void MySinth::process(const ProcessArgs &args) {
 	struct MySinthWidget : ModuleWidget {
 		MySinthWidget(MySinth * module);
 	};
-
+    //colonne - righe |   colonne x 380 righe  
 	MySinthWidget::MySinthWidget(MySinth * module) {
 
 		setModule(module);
@@ -117,69 +117,61 @@ void MySinth::process(const ProcessArgs &args) {
 			addChild(title);
 		}
 
-		// Primary controls (shared F0 / PITCH)
+		// Top row: OSC1 and OSC2 with waveform switch + level knobs, Pitch to the right
 		{
-			ATextLabel * lblF0 = new ATextLabel(Vec(27, 40));
-			lblF0->setText("Pitch");
-			addChild(lblF0);
-		}
-		addParam(createParam<RoundBlackKnob>(Vec(30, 70), module, MySinth::PITCH));
-
-		{
-			ATextLabel * lblPitch = new ATextLabel(Vec(27, 110));
-			lblPitch->setText("Detune");
-			addChild(lblPitch);
-		}
-		addParam(createParam<RoundBlackKnob>(Vec(30, 140), module, MySinth::DETUNE));
-
-		// Two waveform selectors in two columns
-		{
-			ATextLabel * lbl1 = new ATextLabel(Vec(18, 150));
+			ATextLabel * lbl1 = new ATextLabel(Vec(20, 10));
 			lbl1->setText("OSC 1");
 			addChild(lbl1);
 		}
-		addParam(createParam<CKSS>(Vec(18, 170), module, MySinth::OSC_WAVE1));
+		addParam(createParam<CKSS>(Vec(20, 50), module, MySinth::OSC_WAVE1));
+		addParam(createParam<RoundBlackKnob>(Vec(50, 45), module, MySinth::LEVEL1));
 
 		{
-			ATextLabel * lbl2 = new ATextLabel(Vec(78, 150));
+			ATextLabel * lbl2 = new ATextLabel(Vec(90, 10));
 			lbl2->setText("OSC 2");
 			addChild(lbl2);
 		}
-		addParam(createParam<CKSS>(Vec(78, 170), module, MySinth::OSC_WAVE2));
+		addParam(createParam<CKSS>(Vec(90, 50), module, MySinth::OSC_WAVE2));
+		addParam(createParam<RoundBlackKnob>(Vec(120, 45), module, MySinth::LEVEL2));
 
-		// Outputs under each oscillator column
+		// Pitch to the right of Level1
 		{
-			ATextLabel * lblOut1 = new ATextLabel(Vec(18, 205));
+			ATextLabel * lblPitch = new ATextLabel(Vec(160, 10));
+			lblPitch->setText("Pitch");
+			addChild(lblPitch);
+		}
+		addParam(createParam<RoundBlackKnob>(Vec(160, 30), module, MySinth::PITCH));
+
+		// Detune under Level2
+		{
+			ATextLabel * lblDet = new ATextLabel(Vec(120, 70));
+			lblDet->setText("Detune");
+			addChild(lblDet);
+		}
+		addParam(createParam<RoundBlackKnob>(Vec(120, 90), module, MySinth::DETUNE));
+
+		// V/Oct input near pitch
+		{
+			ATextLabel * lblV = new ATextLabel(Vec(160, 70));
+			lblV->setText("V/Oct");
+			addChild(lblV);
+		}
+		addInput(createInput<PJ3410Port>(Vec(160, 90), module, MySinth::VOCT));
+
+		// Outputs last at bottom
+		{
+			ATextLabel * lblOut1 = new ATextLabel(Vec(40, 260));
 			lblOut1->setText("OUT1");
 			addChild(lblOut1);
 		}
-		addOutput(createOutput<PJ3410Port>(Vec(18, 225), module, MySinth::OUT1));
+		addOutput(createOutput<PJ3410Port>(Vec(40, 280), module, MySinth::OUT1));
 
 		{
-			ATextLabel * lblOut2 = new ATextLabel(Vec(78, 205));
+			ATextLabel * lblOut2 = new ATextLabel(Vec(120, 260));
 			lblOut2->setText("OUT2");
 			addChild(lblOut2);
 		}
-		addOutput(createOutput<PJ3410Port>(Vec(78, 225), module, MySinth::OUT2));
-	    {        
-			ATextLabel * lblOut2 = new ATextLabel(Vec(30, 260));    // V/Oct input
-			lblOut2->setText("V/Oct");
-			addChild(lblOut2);
-		}
-        addInput(createInput<PJ3410Port>(Vec(30, 280), module, MySinth::VOCT));
-        // Level controls
-        {        
-            ATextLabel * lblLevel1 = new ATextLabel(Vec(18, 300));    
-            lblLevel1->setText("Level 1");
-            addChild(lblLevel1);
-        }
-        addParam(createParam<RoundBlackKnob>(Vec(18, 320), module, MySinth::LEVEL1));
-        {        
-            ATextLabel * lblLevel2 = new ATextLabel(Vec(78, 300));    
-            lblLevel2->setText("Level 2");
-            addChild(lblLevel2);
-        }
-        addParam(createParam<RoundBlackKnob>(Vec(78, 320), module, MySinth::LEVEL2));
+		addOutput(createOutput<PJ3410Port>(Vec(120, 280), module, MySinth::OUT2));
 	}
 
 	Model *modelMySinth = createModel<MySinth, MySinthWidget>("MySinth");
