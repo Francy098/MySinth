@@ -8,8 +8,10 @@ struct MySinth : Module {
 	enum ParamIds {
 		PITCH, //potenziometro di pitch (FREQUENZA)
         DETUNE, //potenziometro di detune in semitoni
-        OSC_WAVE1, //selettore forma d'onda(CKSS): 0 = saw, 1 = square
-		OSC_WAVE2,
+        OSC_WAVE1, //selettore forma d'onda(CKSS) per osc1: 0 = saw, 1 = square
+		OSC_WAVE2,  //selettore forma d'onda(CKSS) per osc2: 0 = saw, 1 = square
+        LEVEL1, //livello di uscita osc1
+        LEVEL2, //livello di uscita osc2
         NUM_PARAMS,
 	};
 	enum InputIds {
@@ -31,6 +33,8 @@ struct MySinth : Module {
 		configParam(PITCH, 100.0f, 15000.0f, 100.0f,"PITCH"); // 100Hz <= PITCH <= 20kHz
 		configParam(OSC_WAVE1, 0.0f, 1.0f, 0.0f, "Waveform"); //Selettore forma d'onda (0=saw, 1=square).
 		configParam(OSC_WAVE2, 0.0f, 1.0f, 0.0f, "Waveform"); //Selettore forma d'onda (0=saw, 1=square).
+		configParam(LEVEL1, 0.0f, 1.0f, 1.0f, "Level"); //Livello di uscita osc1
+		configParam(LEVEL2, 0.0f, 1.0f, 1.0f, "Level"); //Livello di uscita osc2
 
 		phase1 = 0.0f;
 		phase2 = 0.0f;
@@ -55,7 +59,9 @@ void MySinth::process(const ProcessArgs &args) {
 		float pitch = params[PITCH].getValue();
         float detune = params[DETUNE].getValue();
         float Voct_input = inputs[VOCT].getVoltage();
-        
+        float level1 = params[LEVEL1].getValue();
+        float level2 = params[LEVEL2].getValue();
+
 		// Compute frequencies
 		// Voct input is volts per octave: 1V -> octave -> freq multiplier = 2^(Voct)
 		float freq1 = pitch * std::pow(2.0f, Voct_input); 
@@ -86,8 +92,8 @@ void MySinth::process(const ProcessArgs &args) {
 		float out_osc1 = (waveSel1 < 0.5f) ? saw1 : sq1;
 		float out_osc2 = (waveSel2 < 0.5f) ? saw2 : sq2;
 
-		outputs[OUT1].setVoltage(5.0f * out_osc1);
-		outputs[OUT2].setVoltage(5.0f * out_osc2);
+		outputs[OUT1].setVoltage(5.0f * out_osc1 * level1);
+		outputs[OUT2].setVoltage(5.0f * out_osc2 * level2);
 	}
 
 
@@ -161,6 +167,19 @@ void MySinth::process(const ProcessArgs &args) {
 			addChild(lblOut2);
 		}
         addInput(createInput<PJ3410Port>(Vec(30, 280), module, MySinth::VOCT));
+        // Level controls
+        {        
+            ATextLabel * lblLevel1 = new ATextLabel(Vec(18, 300));    
+            lblLevel1->setText("Level 1");
+            addChild(lblLevel1);
+        }
+        addParam(createParam<RoundBlackKnob>(Vec(18, 320), module, MySinth::LEVEL1));
+        {        
+            ATextLabel * lblLevel2 = new ATextLabel(Vec(78, 300));    
+            lblLevel2->setText("Level 2");
+            addChild(lblLevel2);
+        }
+        addParam(createParam<RoundBlackKnob>(Vec(78, 320), module, MySinth::LEVEL2));
 	}
 
 	Model *modelMySinth = createModel<MySinth, MySinthWidget>("MySinth");
