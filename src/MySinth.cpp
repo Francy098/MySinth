@@ -6,6 +6,7 @@
 
 struct MySinth : Module {
 	enum ParamIds {
+        F0,    //potenziometro di frequenza
 		PITCH, //potenziometro di pitch
         OSC_WAVE, //selettore forma d'onda(CKSS): 0 = saw, 1 = square
 		NUM_PARAMS,
