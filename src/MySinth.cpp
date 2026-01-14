@@ -6,12 +6,16 @@
 
 struct MySinth : Module {
 	enum ParamIds {
+            //------------------------ OSCILLATORI ---------------------------
 			PITCH, // potenziometro di pitch (FREQUENZA)
             DETUNE, // potenziometro di detune in semitoni
             LEVEL1, // level controllo per osc1 (0..1)
             LEVEL2, // level controllo per osc2 (0..1)
 			OSC_WAVE1, // selettore forma d'onda (CKSS): 0 = saw, 1 = square
 			OSC_WAVE2,  // selettore forma d'onda (CKSS): 0 = saw, 1 = square
+            LFO_AMOUNT, // profondità di modulazione
+            //------------------------- LFO ---------------------------------
+            RATE,  // velocità di LFO
         NUM_PARAMS,
 	};
 	enum InputIds {
@@ -21,6 +25,7 @@ struct MySinth : Module {
 	enum OutputIds { 
         OUT1,   //Output Osc 1
         OUT2,   //Output Osc 2 
+        LFO_OUT, //Output LFO
 		NUM_OUTPUTS,
 	};
 	enum LightsIds { //luce estetica
@@ -35,6 +40,8 @@ struct MySinth : Module {
 		configParam(LEVEL2, 0.0f, 1.0f, 1.0f, "LEVEL2");    //Livello di uscita osc2
 		configParam(OSC_WAVE1, 0.0f, 1.0f, 0.0f, "Waveform"); // selettore forma d'onda (0=saw, 1=square)
 		configParam(OSC_WAVE2, 0.0f, 1.0f, 0.0f, "Waveform"); // selettore forma d'onda (0=saw, 1=square)
+		configParam(RATE, 0.0f, 10.0f, 1.0f, "LFO RATE");
+        configParam(LFO_AMOUNT, 0.0f, 1.0f, 1.0f, "LFO AMOUNT"); // profondità di modulazione
 
 		phase1 = 0.0f;
 		phase2 = 0.0f;
@@ -104,7 +111,7 @@ void MySinth::process(const ProcessArgs &args) {
 	struct MySinthWidget : ModuleWidget {
 		MySinthWidget(MySinth * module);
 	};
-    //colonne - righe |   colonne x 380 righe  
+    
 	MySinthWidget::MySinthWidget(MySinth * module) {
 
 		setModule(module);
@@ -119,47 +126,87 @@ void MySinth::process(const ProcessArgs &args) {
 
 		// Top row: OSC1 and OSC2 with waveform switch + level knobs, Pitch to the right
 		{
-			ATextLabel * lbl1 = new ATextLabel(Vec(20, 10));
-			lbl1->setText("OSC 1");
+			ATextLabel * lbl1 = new ATextLabel(Vec(90, 10));
+			lbl1->setText("OSCILLATORS");
 			addChild(lbl1);
 		}
-		addParam(createParam<CKSS>(Vec(20, 50), module, MySinth::OSC_WAVE1));
-		addParam(createParam<RoundBlackKnob>(Vec(50, 45), module, MySinth::LEVEL1));
-
-		{
-			ATextLabel * lbl2 = new ATextLabel(Vec(90, 10));
-			lbl2->setText("OSC 2");
-			addChild(lbl2);
-		}
-		addParam(createParam<CKSS>(Vec(90, 50), module, MySinth::OSC_WAVE2));
-		addParam(createParam<RoundBlackKnob>(Vec(120, 45), module, MySinth::LEVEL2));
-
-		// Pitch to the right of Level1
-		{
-			ATextLabel * lblPitch = new ATextLabel(Vec(160, 10));
+        {
+			ATextLabel * lblPitch = new ATextLabel(Vec(85, 40));
 			lblPitch->setText("Pitch");
 			addChild(lblPitch);
 		}
-		addParam(createParam<RoundBlackKnob>(Vec(160, 30), module, MySinth::PITCH));
+		addParam(createParam<RoundBlackKnob>(Vec(90, 70), module, MySinth::PITCH));
+        {
+			ATextLabel * lblPitch = new ATextLabel(Vec(130, 40));
+			lblPitch->setText("LFO_Amount");
+			addChild(lblPitch);
+		}
+		addParam(createParam<RoundBlackKnob>(Vec(140, 70), module, MySinth::LFO_AMOUNT));
 
-		// Detune under Level2
+        {//----------------- OSC 1 ----------------------
+			ATextLabel * lbl1 = new ATextLabel(Vec(110, 35+70));
+			lbl1->setText("OSC 1");
+			addChild(lbl1);
+		}
+        {
+			ATextLabel * lbl1 = new ATextLabel(Vec(70, 45+75+5));
+			lbl1->setText("sqrt");
+			addChild(lbl1);
+		}
+        {
+			ATextLabel * lbl1 = new ATextLabel(Vec(75, 65+75+5));
+			lbl1->setText("saw");
+			addChild(lbl1);
+		}
+		addParam(createParam<CKSS>(Vec(100, 70+75+5), module, MySinth::OSC_WAVE1));
 		{
-			ATextLabel * lblDet = new ATextLabel(Vec(120, 70));
+			ATextLabel * lbl1 = new ATextLabel(Vec(160, 60+75));
+			lbl1->setText("level");
+			addChild(lbl1);
+		}
+        addParam(createParam<RoundBlackKnob>(Vec(130, 70+75), module, MySinth::LEVEL1));
+
+        //----------------- OSC 2 ----------------------
+        {
+			ATextLabel * lbl2 = new ATextLabel(Vec(110, 35+70+70));
+			lbl2->setText("OSC 2");
+			addChild(lbl2);
+		}
+        {
+			ATextLabel * lbl1 = new ATextLabel(Vec(70, 45+75+75));
+			lbl1->setText("sqrt");
+			addChild(lbl1);
+		}
+        {
+			ATextLabel * lbl1 = new ATextLabel(Vec(75, 65+75+75));
+			lbl1->setText("saw");
+			addChild(lbl1);
+		}
+		addParam(createParam<CKSS>(Vec(100, 70+75+75), module, MySinth::OSC_WAVE2));
+        {
+			ATextLabel * lbl1 = new ATextLabel(Vec(160, 60+75+70));
+			lbl1->setText("level");
+			addChild(lbl1);
+		}
+		addParam(createParam<RoundBlackKnob>(Vec(130, 70+75+70), module, MySinth::LEVEL2));
+		{
+			ATextLabel * lblDet = new ATextLabel(Vec(160, 60+75+70+40));
 			lblDet->setText("Detune");
 			addChild(lblDet);
 		}
-		addParam(createParam<RoundBlackKnob>(Vec(120, 90), module, MySinth::DETUNE));
+		addParam(createParam<RoundBlackKnob>(Vec(130, 70+75+70+40), module, MySinth::DETUNE));
 
-		// V/Oct input near pitch
-		{
-			ATextLabel * lblV = new ATextLabel(Vec(160, 70));
+        // V/Oct input near pitch
+        {
+			ATextLabel * lblV = new ATextLabel(Vec(115, 70+75+70+40+30));
 			lblV->setText("V/Oct");
 			addChild(lblV);
 		}
-		addInput(createInput<PJ3410Port>(Vec(160, 90), module, MySinth::VOCT));
+		addInput(createInput<PJ3410Port>(Vec(115, 70+75+70+40+60), module, MySinth::VOCT));
+        /*
 
 		// Outputs last at bottom
-		{
+		/*{
 			ATextLabel * lblOut1 = new ATextLabel(Vec(40, 260));
 			lblOut1->setText("OUT1");
 			addChild(lblOut1);
@@ -171,7 +218,32 @@ void MySinth::process(const ProcessArgs &args) {
 			lblOut2->setText("OUT2");
 			addChild(lblOut2);
 		}
-		addOutput(createOutput<PJ3410Port>(Vec(120, 280), module, MySinth::OUT2));
-	}
+		addOutput(createOutput<PJ3410Port>(Vec(120, 280), module, MySinth::OUT2));*/
+	
+        //----------------- LFO ----------------------
+        {
+            ATextLabel * lblRate = new ATextLabel(Vec(20, 10));
+            lblRate->setText("LFO");
+            addChild(lblRate);
+        }
+        {
+            ATextLabel * lblRate = new ATextLabel(Vec(20, 40));
+            lblRate->setText("Rate");
+            addChild(lblRate);
+        }
+        addParam(createParam<RoundBlackKnob>(Vec(20, 70), module, MySinth::RATE));
+        {
+            ATextLabel * lblLFO = new ATextLabel(Vec(10, 110));
+            lblLFO->setText("LFO_OUT");
+            addChild(lblLFO);
+        }
+        addOutput(createOutput<PJ3410Port>(Vec(20, 140), module, MySinth::LFO_OUT));
+    }
 
 	Model *modelMySinth = createModel<MySinth, MySinthWidget>("MySinth");
+
+
+    //===================== LINEE GUIDA GRAFICA =====================
+    // 30 righe fra l'etichetta e la manopola sotto (30 righe fra etichetta e presa jacks)
+    // 40 righe fra manopola e l'etichetta sotto
+    // fra etichette 30 righe 
