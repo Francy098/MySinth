@@ -46,8 +46,6 @@ struct MySinth : Module {
 		configParam(RATE, 0.0f, 10.0f, 1.0f, "LFO RATE");
         configParam(LFO_AMOUNT, 0.0f, 1.0f, 1.0f, "LFO AMOUNT"); // profondità di modulazione
 
-		phase1 = 0.0f;
-		phase2 = 0.0f;
 		sampleRate = 44100.0f;
 		lfo.reset(0.0); // reset phase to 0
 	}
@@ -59,12 +57,11 @@ struct MySinth : Module {
 	float Ts= 1.f/Fs; //Periodo campionamento
 
 	// internal oscillator state
-	float phase1;
-	float phase2;
 	float sampleRate;
 
-	// LFO instance (value)
-	MySinthLFO lfo;
+	MySinthOsc::SawOsc sawOsc1, sawOsc2;
+	MySinthOsc::SquareOsc sqOsc1, sqOsc2;
+	MySinthLFO lfo; // LFO instance (value)
 
 	void process(const ProcessArgs &args) override;
 };
@@ -90,7 +87,25 @@ void MySinth::process(const ProcessArgs &args) {
 		float freq1 = pitch * std::pow(2.0f, Voct_input); 
 		float freq2 = freq1 * std::pow(2.0f, detune / 12.0f);
 
-		// Phase increments
+		//OSC1: saw and square
+		sawOsc1.setSampleRate(args.sampleRate);
+		sawOsc1.setFrequency(freq1 ); //+ lfo_out * lfo_amount * freq1);
+		sqOsc1.setSampleRate(args.sampleRate);
+		sqOsc1.setFrequency( freq1 );//+ lfo_out * lfo_amount * freq1);
+
+		//OSC2: saw and square
+		sawOsc2.setSampleRate(args.sampleRate);
+		sawOsc2.setFrequency(freq2 );//+ lfo_out * lfo_amount * freq2);
+		sqOsc2.setSampleRate(args.sampleRate);
+		sqOsc2.setFrequency( freq2 );//+ lfo_out * lfo_amount * freq2);
+
+		// Waveform selection
+		float waveSel1 = params[OSC_WAVE1].getValue();
+		float waveSel2 = params[OSC_WAVE2].getValue();
+		float out_osc1 = (waveSel1 < 0.5f) ? sawOsc1.process() : sqOsc1.process();
+		float out_osc2 = (waveSel2 < 0.5f) ? sawOsc2.process() : sqOsc2.process();
+
+		/*// Phase increments
 		float sr = args.sampleRate; 
 		if (sr <= 0.0f) sr = sampleRate;    
 		float phaseInc1 = freq1 / sr; 
@@ -108,15 +123,10 @@ void MySinth::process(const ProcessArgs &args) {
 		float sq1 = (phase1 < 0.5f) ? 1.0f : -1.0f;
 
 		float saw2 = 2.0f * phase2 - 1.0f;
-		float sq2 = (phase2 < 0.5f) ? 1.0f : -1.0f;
+		float sq2 = (phase2 < 0.5f) ? 1.0f : -1.0f;*/
 
-		float waveSel1 = params[OSC_WAVE1].getValue();
-		float waveSel2 = params[OSC_WAVE2].getValue();
-		float out_osc1 = (waveSel1 < 0.5f) ? saw1 : sq1;
-		float out_osc2 = (waveSel2 < 0.5f) ? saw2 : sq2;
-
-		outputs[OUT1].setVoltage(5.0f * out_osc1 * level1);
-		outputs[OUT2].setVoltage(5.0f * out_osc2 * level2);
+		outputs[OUT1].setVoltage(5.0f * out_osc1 * level1);	// scale to +/-5V
+		outputs[OUT2].setVoltage(5.0f * out_osc2 * level2);	// scale to +/-5V
 	}
 
 
@@ -219,8 +229,8 @@ void MySinth::process(const ProcessArgs &args) {
 			addChild(lblV);
 		}
 		addInput(createInput<PJ3410Port>(Vec(115, 70+75+70+40+60), module, MySinth::VOCT));
-		// Outputs last at bottom
-	/*	{
+		/*// Outputs last at bottom
+		{
 			ATextLabel * lblOut1 = new ATextLabel(Vec(40, 260));
 			lblOut1->setText("OUT1");
 			addChild(lblOut1);
