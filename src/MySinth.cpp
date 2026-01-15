@@ -78,7 +78,7 @@ void MySinth::process(const ProcessArgs &args) {
 		// LFO processing (use member lfo)
 		lfo.setSampleRate(args.sampleRate);
 		lfo.setRate(lfo_rate);
-		float lfo_out = lfo.process(); // -1..1
+		float lfo_out = lfo.process(); // lfo_out range [-1,1]
 		outputs[LFO_OUT].setVoltage(5.0f * lfo_out); // LFO output scaled to +/-5V
 
 
@@ -89,15 +89,15 @@ void MySinth::process(const ProcessArgs &args) {
 
 		//OSC1: saw and square
 		sawOsc1.setSampleRate(args.sampleRate);
-		sawOsc1.setFrequency(freq1 ); //+ lfo_out * lfo_amount * freq1);
+		sawOsc1.setFrequency(freq1 + lfo_out * lfo_amount * freq1); //modulazione di frequenza con LFO
 		sqOsc1.setSampleRate(args.sampleRate);
-		sqOsc1.setFrequency( freq1 );//+ lfo_out * lfo_amount * freq1);
+		sqOsc1.setFrequency( freq1 + lfo_out * lfo_amount * freq1); //modulazione di frequenza con LFO
 
 		//OSC2: saw and square
 		sawOsc2.setSampleRate(args.sampleRate);
-		sawOsc2.setFrequency(freq2 );//+ lfo_out * lfo_amount * freq2);
+		sawOsc2.setFrequency(freq2 + lfo_out * lfo_amount * freq2); //modulazione di frequenza con LFO
 		sqOsc2.setSampleRate(args.sampleRate);
-		sqOsc2.setFrequency( freq2 );//+ lfo_out * lfo_amount * freq2);
+		sqOsc2.setFrequency( freq2 + lfo_out * lfo_amount * freq2); //modulazione di frequenza con LFO
 
 		// Waveform selection
 		float waveSel1 = params[OSC_WAVE1].getValue();
@@ -211,7 +211,7 @@ void MySinth::process(const ProcessArgs &args) {
 			addChild(lblV);
 		}
 		addInput(createInput<PJ3410Port>(Vec(115, 70+75+70+40+60), module, MySinth::VOCT));
-		/*// Outputs last at bottom
+		// Outputs last at bottom
 		{
 			ATextLabel * lblOut1 = new ATextLabel(Vec(40, 260));
 			lblOut1->setText("OUT1");
@@ -224,7 +224,7 @@ void MySinth::process(const ProcessArgs &args) {
 			lblOut2->setText("OUT2");
 			addChild(lblOut2);
 		}
-		addOutput(createOutput<PJ3410Port>(Vec(120, 280), module, MySinth::OUT2));*/
+		addOutput(createOutput<PJ3410Port>(Vec(120, 280), module, MySinth::OUT2));
 	
         //----------------- LFO ----------------------
         {

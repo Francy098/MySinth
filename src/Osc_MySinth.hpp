@@ -11,6 +11,12 @@ public:
 	SquareOsc() = default;
 	void setSampleRate(double sr) { sampleRate = sr; updateInc(); } //aggiornamento sample rate
 	void setFrequency(double f) { frequency = f; updateInc(); } //aggiornamento frequenza
+	//Aggiunta clamp
+	/*void setFrequency(double f) { 
+    frequency = std::max(0.0, f);  // Assicura freq >= 0
+    updateInc(); 
+}*/
+
 	void setPulseWidth(double pw) { pulseWidth = std::max(0.0, std::min(1.0, pw)); } //aggiornamento duty cycle
 	//------------------------------------------ std::min e std::max servono per limitare il valore del duty cycle tra 0 e 1 -> std::min() prende il valore minore tra 1 e pw, mentre std::max prende il valore maggiore tra 0 e il risultato di std::min 
 	void reset(double ph = 0.0) { phase = ph - std::floor(ph); }    // reset fase
