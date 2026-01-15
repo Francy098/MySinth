@@ -102,31 +102,13 @@ void MySinth::process(const ProcessArgs &args) {
 		// Waveform selection
 		float waveSel1 = params[OSC_WAVE1].getValue();
 		float waveSel2 = params[OSC_WAVE2].getValue();
-		float out_osc1 = (waveSel1 < 0.5f) ? sawOsc1.process() : sqOsc1.process();
-		float out_osc2 = (waveSel2 < 0.5f) ? sawOsc2.process() : sqOsc2.process();
 
-		/*// Phase increments
-		float sr = args.sampleRate; 
-		if (sr <= 0.0f) sr = sampleRate;    
-		float phaseInc1 = freq1 / sr; 
-		float phaseInc2 = freq2 / sr; 
+		// Outputs scaled to +/-5V and apply respective level
+		float out_osc1 = (waveSel1 < 0.5f) ? 5.0f * sawOsc1.process() * level1 : 5.0f * sqOsc1.process() * level1;
+		float out_osc2 = (waveSel2 < 0.5f) ? 5.0f * sawOsc2.process() * level2 : 5.0f * sqOsc2.process() * level2;
 
-		// Update phases independently
-		phase1 += phaseInc1;
-		if (phase1 >= 1.0f) phase1 -= std::floor(phase1);
-
-		phase2 += phaseInc2;
-		if (phase2 >= 1.0f) phase2 -= std::floor(phase2);
-
-		// Wave generation per oscillator
-		float saw1 = 2.0f * phase1 - 1.0f;
-		float sq1 = (phase1 < 0.5f) ? 1.0f : -1.0f;
-
-		float saw2 = 2.0f * phase2 - 1.0f;
-		float sq2 = (phase2 < 0.5f) ? 1.0f : -1.0f;*/
-
-		outputs[OUT1].setVoltage(5.0f * out_osc1 * level1);	// scale to +/-5V
-		outputs[OUT2].setVoltage(5.0f * out_osc2 * level2);	// scale to +/-5V
+		outputs[OUT1].setVoltage(out_osc1);	
+		outputs[OUT2].setVoltage(out_osc2);	
 	}
 
 
