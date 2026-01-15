@@ -3,6 +3,7 @@
 #include "dsp/digital.hpp"
 #include "Osc_MySinth.hpp"
 #include "LFO_MySinth.hpp"
+#include "LPF_MySinth.hpp"
 
 
 #define TRIG_TIME 1e-3f
@@ -23,10 +24,14 @@ struct MySinth : Module {
 			//------------------------- NOISE -----------------------------
 			NOISE_LEVEL, // livello del rumore
 			LFO_AMOUNT_NOISE, // profondità di modulazione del rumore
+			//------------------------ LPF ------------------------------
+			CUT_OFF, // Cutoff LPF
+			RESONANCE,    // Risonanza LPF
         NUM_PARAMS,
 	};
 	enum InputIds {
         VOCT,   //V/Oct input
+		CUT_OFF_IN, // Cutoff CV input
 		NUM_INPUTS,
 	};
 	enum OutputIds { 
@@ -34,6 +39,7 @@ struct MySinth : Module {
         OUT2,   //Output Osc 2 
         LFO_OUT, //Output LFO
 		OUT_MIDDLE, //Output somma oscillatori + rumore
+		OUT_LPF, //Output LPF
 		NUM_OUTPUTS,
 	};
 	enum LightsIds { //luce estetica
@@ -52,6 +58,8 @@ struct MySinth : Module {
         configParam(LFO_AMOUNT, 0.0f, 1.0f, 1.0f, "LFO AMOUNT"); // profondità di modulazione
 		configParam(NOISE_LEVEL, 0.0f, 1.0f, 1.0f, "NOISE LEVEL");
 		configParam(LFO_AMOUNT_NOISE, 0.0f, 1.0f, 1.0f, "LFO AMOUNT NOISE");
+		configParam(CUT_OFF, 20.0f, 20000.0f, 1000.0f, "LPF CUTOFF");	// Cutoff LPF
+		configParam(RESONANCE, 0.0f, 0.99f,	0.5f, "LPF RESONANCE"); // Evitare 1.0f per stabilità
 
 		sampleRate = 44100.0f;
 		lfo.reset(0.0); // reset phase to 0
@@ -66,10 +74,11 @@ struct MySinth : Module {
 	// internal oscillator state
 	float sampleRate;
 
-	MySinthOsc::SawOsc sawOsc1, sawOsc2;
-	MySinthOsc::SquareOsc sqOsc1, sqOsc2;
-	MySinthLFO lfo; // LFO instance (value)
-	NoiseGenerator::WhiteNoise WhiteNoise;
+	MySinthOsc::SawOsc sawOsc1, sawOsc2;	// Sawtooth Oscillator instances
+	MySinthOsc::SquareOsc sqOsc1, sqOsc2;	// Square Oscillator instances
+	MySinthLFO lfo; 						// LFO instance (value)
+	NoiseGenerator::WhiteNoise WhiteNoise;	 // White Noise instance
+	StateVariableFilter::StateVarFil SVFilter1, SVFilter2; // LPF instance
 
 	void process(const ProcessArgs &args) override;
 };
@@ -84,6 +93,8 @@ void MySinth::process(const ProcessArgs &args) {
         float lfo_rate = params[RATE].getValue();
 		float noise_level = params[NOISE_LEVEL].getValue();
         float lfo_amount_noise = params[LFO_AMOUNT_NOISE].getValue();
+		float cutoff = params[CUT_OFF].getValue();
+		float resonance = params[RESONANCE].getValue();	
 
 		// LFO processing (use member lfo)
 		lfo.setSampleRate(args.sampleRate);
@@ -123,10 +134,21 @@ void MySinth::process(const ProcessArgs &args) {
 		//Output in the middle (somma di oscillatori e rumore)
 		float Y_in_the_middle = (out_osc1 + out_osc2) / 2.0f + out_noise*noise_level; // somma dei due oscillatori e del rumore per il livello rumore
 
+		//------------- LPF processing ----------------
+		// Modulation of cutoff with input CV
+		if (inputs[CUT_OFF_IN].isConnected()) cutoff += rescale(inputs[CUT_OFF_IN].getVoltage(), -10.0f, 10.0f, 20.0f, 20000.0f);
+		// Aggiorna i parametri del filtro
+		SVFilter1.updateParameters(cutoff, resonance, sampleRate);
+		SVFilter2.updateParameters(cutoff, resonance, sampleRate);
+		// Processa il segnale attraverso due LPF in serie
+		float lpf_out1 = SVFilter1.process(Y_in_the_middle);
+		float lpf_out2 = SVFilter2.process(lpf_out1,);
+
 		// Set outputs
 		outputs[OUT1].setVoltage(out_osc1);	
 		outputs[OUT2].setVoltage(out_osc2);
 		outputs[OUT_MIDDLE].setVoltage(Y_in_the_middle);
+		outputs[OUT_LPF].setVoltage(lpf_out2);	// Final LPF output
 	}
 
 
@@ -290,7 +312,31 @@ void MySinth::process(const ProcessArgs &args) {
 			addChild(lblLfoNoise);
 		}
 		addParam(createParam<RoundBlackKnob>(Vec(180+60, 140), module, MySinth::LFO_AMOUNT_NOISE));
-    }
+		//----------------- LPF ----------------------
+		{
+			ATextLabel * lblLPF = new ATextLabel(Vec(260+90, 10));
+			lblLPF->setText("LPF");
+			addChild(lblLPF);
+		}
+		{
+			ATextLabel * lblCutoff = new ATextLabel(Vec(250+90, 40));
+			lblCutoff->setText("Cutoff");
+			addChild(lblCutoff);
+		}
+		addParam(createParam<RoundBlackKnob>(Vec(260+90, 70), module, MySinth::CUT_OFF));
+		{
+			ATextLabel * lblResonance = new ATextLabel(Vec(240+90, 110));
+			lblResonance->setText("Resonance");
+			addChild(lblResonance);
+		}
+		addParam(createParam<RoundBlackKnob>(Vec(260+90, 140), module, MySinth::RESONANCE));
+		{
+			ATextLabel * lblCutoffIn = new ATextLabel(Vec(240+90, 180));
+			lblCutoffIn->setText("Cutoff CV");
+			addChild(lblCutoffIn);
+		}
+		addInput(createInput<PJ3410Port>(Vec(260+90, 210), module, MySinth::CUT_OFF_IN));
+	}
 
 	Model *modelMySinth = createModel<MySinth, MySinthWidget>("MySinth");
 
