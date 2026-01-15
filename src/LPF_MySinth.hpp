@@ -12,14 +12,11 @@ namespace StateVariableFilter {
      public:
         StateVarFil() {
             reset();
-            process(float input);
-            updateParameters(float cutoff, float resonance, float sampleRate);
         };
         void reset() { //Resetta gli stati del filtro per evitare "pop" o instabilità iniziali.
             s1 = 0.0f;
             s2 = 0.0f;
             }
-            
         /**
         * Calcola i coefficienti. Da chiamare quando cambiano i parametri.
         * @param cutoff Frequenza in Hz (es. 20.0f a 18000.0f)
@@ -43,7 +40,7 @@ namespace StateVariableFilter {
             BAND_PASS,
             NOTCH
         };*/    
-        private:
+    private:
         // Stati interni (memoria degli integratori)
         float s1 = 0.0f;
         float s2 = 0.0f;
@@ -56,7 +53,7 @@ namespace StateVariableFilter {
 
 
 
-
+    public:
     //Processa un singolo campione audio.
     float process(float input) {
         // Risoluzione analitica del loop di feedback (Zero-Delay)
@@ -69,14 +66,6 @@ namespace StateVariableFilter {
         s2 = g * Yb + Yl;   // Aggiornamento stato (Metodo trapezoidale)
         
         return Yl;
-        /*// Switch per restituire il segnale desiderato
-        switch (mode) {
-            case FilterMode::LOW_PASS:  return Yl;
-            case FilterMode::HIGH_PASS: return Yh;
-            case FilterMode::BAND_PASS: return Yb;
-            case FilterMode::NOTCH:     return Yh + Yl;
-            default:                    return Yl;
-        }*/
     }
 };
 

@@ -142,7 +142,7 @@ void MySinth::process(const ProcessArgs &args) {
 		SVFilter2.updateParameters(cutoff, resonance, sampleRate);
 		// Processa il segnale attraverso due LPF in serie
 		float lpf_out1 = SVFilter1.process(Y_in_the_middle);
-		float lpf_out2 = SVFilter2.process(lpf_out1,);
+		float lpf_out2 = SVFilter2.process(lpf_out1);
 
 		// Set outputs
 		outputs[OUT1].setVoltage(out_osc1);	
@@ -336,6 +336,12 @@ void MySinth::process(const ProcessArgs &args) {
 			addChild(lblCutoffIn);
 		}
 		addInput(createInput<PJ3410Port>(Vec(260+90, 210), module, MySinth::CUT_OFF_IN));
+		{
+			ATextLabel * lblOutLPF = new ATextLabel(Vec(250+90, 250));
+			lblOutLPF->setText("OUT_LPF");
+			addChild(lblOutLPF);
+		}
+		addOutput(createOutput<PJ3410Port>(Vec(260+90, 280), module, MySinth::OUT_LPF));
 	}
 
 	Model *modelMySinth = createModel<MySinth, MySinthWidget>("MySinth");
