@@ -1,4 +1,5 @@
 #include "ABC.hpp"
+#include "Noise_MySinth.hpp"
 #include "dsp/digital.hpp"
 #include "Osc_MySinth.hpp"
 #include "LFO_MySinth.hpp"
@@ -19,6 +20,9 @@ struct MySinth : Module {
             LFO_AMOUNT, // profondità di modulazione
             //------------------------- LFO ---------------------------------
             RATE,  // velocità di LFO
+			//------------------------- NOISE -----------------------------
+			NOISE_LEVEL, // livello del rumore
+			LFO_AMOUNT_NOISE, // profondità di modulazione del rumore
         NUM_PARAMS,
 	};
 	enum InputIds {
@@ -29,6 +33,7 @@ struct MySinth : Module {
         OUT1,   //Output Osc 1
         OUT2,   //Output Osc 2 
         LFO_OUT, //Output LFO
+		OUT_MIDDLE, //Output somma oscillatori + rumore
 		NUM_OUTPUTS,
 	};
 	enum LightsIds { //luce estetica
@@ -45,6 +50,8 @@ struct MySinth : Module {
 		configParam(OSC_WAVE2, 0.0f, 1.0f, 0.0f, "Waveform"); // selettore forma d'onda (0=saw, 1=square)
 		configParam(RATE, 0.0f, 10.0f, 1.0f, "LFO RATE");
         configParam(LFO_AMOUNT, 0.0f, 1.0f, 1.0f, "LFO AMOUNT"); // profondità di modulazione
+		configParam(NOISE_LEVEL, 0.0f, 1.0f, 1.0f, "NOISE LEVEL");
+		configParam(LFO_AMOUNT_NOISE, 0.0f, 1.0f, 1.0f, "LFO AMOUNT NOISE");
 
 		sampleRate = 44100.0f;
 		lfo.reset(0.0); // reset phase to 0
@@ -62,6 +69,7 @@ struct MySinth : Module {
 	MySinthOsc::SawOsc sawOsc1, sawOsc2;
 	MySinthOsc::SquareOsc sqOsc1, sqOsc2;
 	MySinthLFO lfo; // LFO instance (value)
+	NoiseGenerator::WhiteNoise WhiteNoise;
 
 	void process(const ProcessArgs &args) override;
 };
@@ -74,7 +82,9 @@ void MySinth::process(const ProcessArgs &args) {
         float level2 = params[LEVEL2].getValue();
         float lfo_amount = params[LFO_AMOUNT].getValue();
         float lfo_rate = params[RATE].getValue();
-        
+		float noise_level = params[NOISE_LEVEL].getValue();
+        float lfo_amount_noise = params[LFO_AMOUNT_NOISE].getValue();
+
 		// LFO processing (use member lfo)
 		lfo.setSampleRate(args.sampleRate);
 		lfo.setRate(lfo_rate);
@@ -107,8 +117,16 @@ void MySinth::process(const ProcessArgs &args) {
 		float out_osc1 = (waveSel1 < 0.5f) ? 5.0f * sawOsc1.process() * level1 : 5.0f * sqOsc1.process() * level1;
 		float out_osc2 = (waveSel2 < 0.5f) ? 5.0f * sawOsc2.process() * level2 : 5.0f * sqOsc2.process() * level2;
 
+		//White Noise output
+		float out_noise = WhiteNoise.process(); //rumore bianco
+		out_noise += out_noise * lfo_out * lfo_amount_noise;	// Modulation of noise level with LFO
+		//Output in the middle (somma di oscillatori e rumore)
+		float Y_in_the_middle = (out_osc1 + out_osc2) / 2.0f + out_noise*noise_level; // somma dei due oscillatori e del rumore per il livello rumore
+
+		// Set outputs
 		outputs[OUT1].setVoltage(out_osc1);	
-		outputs[OUT2].setVoltage(out_osc2);	
+		outputs[OUT2].setVoltage(out_osc2);
+		outputs[OUT_MIDDLE].setVoltage(Y_in_the_middle);
 	}
 
 
@@ -132,7 +150,27 @@ void MySinth::process(const ProcessArgs &args) {
 			addChild(title);
 		}
 
-		// Top row: OSC1 and OSC2 with waveform switch + level knobs, Pitch to the right
+		//-------------------------- LFO --------------------------------
+        {
+            ATextLabel * lblRate = new ATextLabel(Vec(20, 10));
+            lblRate->setText("LFO");
+            addChild(lblRate);
+        }
+        {
+            ATextLabel * lblRate = new ATextLabel(Vec(20, 40));
+            lblRate->setText("Rate");
+            addChild(lblRate);
+        }
+        addParam(createParam<RoundBlackKnob>(Vec(20, 70), module, MySinth::RATE));
+        {
+            ATextLabel * lblLFO = new ATextLabel(Vec(10, 110));
+            lblLFO->setText("LFO_OUT");
+            addChild(lblLFO);
+        }
+        addOutput(createOutput<PJ3410Port>(Vec(20, 140), module, MySinth::LFO_OUT));
+
+
+		//-------------------------- OSCILLATORS ------------------------
 		{
 			ATextLabel * lbl1 = new ATextLabel(Vec(90, 10));
 			lbl1->setText("OSCILLATORS");
@@ -145,13 +183,13 @@ void MySinth::process(const ProcessArgs &args) {
 		}
 		addParam(createParam<RoundBlackKnob>(Vec(90, 70), module, MySinth::PITCH));
         {
-			ATextLabel * lblPitch = new ATextLabel(Vec(130, 40));
+			ATextLabel * lblPitch = new ATextLabel(Vec(125, 40));
 			lblPitch->setText("LFO_Amount");
 			addChild(lblPitch);
 		}
 		addParam(createParam<RoundBlackKnob>(Vec(140, 70), module, MySinth::LFO_AMOUNT));
 
-        {//----------------- OSC 1 ----------------------
+        {//------------- OSC 1 ----------------
 			ATextLabel * lbl1 = new ATextLabel(Vec(110, 35+70));
 			lbl1->setText("OSC 1");
 			addChild(lbl1);
@@ -174,7 +212,7 @@ void MySinth::process(const ProcessArgs &args) {
 		}
         addParam(createParam<RoundBlackKnob>(Vec(130, 70+75), module, MySinth::LEVEL1));
 
-        //----------------- OSC 2 ----------------------
+        //------------- OSC 2 ---------------
         {
 			ATextLabel * lbl2 = new ATextLabel(Vec(110, 35+70+70));
 			lbl2->setText("OSC 2");
@@ -211,7 +249,8 @@ void MySinth::process(const ProcessArgs &args) {
 			addChild(lblV);
 		}
 		addInput(createInput<PJ3410Port>(Vec(115, 70+75+70+40+60), module, MySinth::VOCT));
-		// Outputs last at bottom
+		
+		//---------------- Outputs last at bottom
 		{
 			ATextLabel * lblOut1 = new ATextLabel(Vec(40, 260));
 			lblOut1->setText("OUT1");
@@ -225,25 +264,32 @@ void MySinth::process(const ProcessArgs &args) {
 			addChild(lblOut2);
 		}
 		addOutput(createOutput<PJ3410Port>(Vec(120, 280), module, MySinth::OUT2));
+		//---------------- Output in the middle
+		{
+			ATextLabel * lblOutMiddle = new ATextLabel(Vec(200+30, 250));
+			lblOutMiddle->setText("OUT_MID");
+			addChild(lblOutMiddle);
+		}
+		addOutput(createOutput<PJ3410Port>(Vec(180+60, 280), module, MySinth::OUT_MIDDLE));
 	
-        //----------------- LFO ----------------------
-        {
-            ATextLabel * lblRate = new ATextLabel(Vec(20, 10));
-            lblRate->setText("LFO");
-            addChild(lblRate);
-        }
-        {
-            ATextLabel * lblRate = new ATextLabel(Vec(20, 40));
-            lblRate->setText("Rate");
-            addChild(lblRate);
-        }
-        addParam(createParam<RoundBlackKnob>(Vec(20, 70), module, MySinth::RATE));
-        {
-            ATextLabel * lblLFO = new ATextLabel(Vec(10, 110));
-            lblLFO->setText("LFO_OUT");
-            addChild(lblLFO);
-        }
-        addOutput(createOutput<PJ3410Port>(Vec(20, 140), module, MySinth::LFO_OUT));
+		//----------------- NOISE ----------------------
+		{
+			ATextLabel * lblNoise = new ATextLabel(Vec(160+75, 10));
+			lblNoise->setText("NOISE");
+			addChild(lblNoise);
+		}
+		{
+			ATextLabel * lblNoiseLevel = new ATextLabel(Vec(175+60, 40));
+			lblNoiseLevel->setText("Level");
+			addChild(lblNoiseLevel);
+		}
+		addParam(createParam<RoundBlackKnob>(Vec(180+60, 70), module, MySinth::NOISE_LEVEL));
+		{
+			ATextLabel * lblLfoNoise = new ATextLabel(Vec(170+60, 110));
+			lblLfoNoise->setText("LFO Amt");
+			addChild(lblLfoNoise);
+		}
+		addParam(createParam<RoundBlackKnob>(Vec(180+60, 140), module, MySinth::LFO_AMOUNT_NOISE));
     }
 
 	Model *modelMySinth = createModel<MySinth, MySinthWidget>("MySinth");
