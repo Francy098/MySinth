@@ -2,8 +2,9 @@
 #pragma once
 
 #include <cmath>
+namespace LowFrequencyOscillator {
 
-class MySinthLFO {
+    class MySinthLFO {
 public:
     // Backwards-compatible wrapper: same API as previous LFO class
 public:
@@ -51,3 +52,5 @@ private:
     double phase;
     double phaseInc;
 };
+}
+

@@ -76,7 +76,7 @@ struct MySinth : Module {
 
 	MySinthOsc::SawOsc sawOsc1, sawOsc2;	// Sawtooth Oscillator instances
 	MySinthOsc::SquareOsc sqOsc1, sqOsc2;	// Square Oscillator instances
-	MySinthLFO lfo; 						// LFO instance (value)
+	LowFrequencyOscillator::MySinthLFO lfo; // LFO instance (value)
 	NoiseGenerator::WhiteNoise WhiteNoise;	 // White Noise instance
 	StateVariableFilter::StateVarFil SVFilter1, SVFilter2; // LPF instance
 
