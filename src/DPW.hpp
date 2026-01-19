@@ -125,8 +125,12 @@ struct DPW {
 		switch(type) {
 		case TYPE_SAW:
 			return 2 * phase - 1;
+		case TYPE_SQU:	
+			return (phase < 0.5) ? 1.0 : -1.0; // Square wave with 50% duty cycle
+		case TYPE_TRI:
+			return (phase < 0.5) ? (4.0 * phase - 1.0) : (3.0 - 4.0 * phase);
 		default:
-			return 0; // implementing other trivial waveforms is left as an exercise
+			return 0;
 		}
 	}
 
