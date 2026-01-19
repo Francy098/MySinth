@@ -2,6 +2,7 @@
 #include "Noise_MySinth.hpp"
 #include "dsp/digital.hpp"
 #include "Osc_MySinth.hpp"
+#include "DPW.hpp"
 #include "LFO_MySinth.hpp"
 #include "LPF_MySinth.hpp"
 
@@ -67,12 +68,14 @@ struct MySinth : Module {
 
 	void onSampleRateChange() override {
 		sampleRate = APP->engine->getSampleRate();
+		Ts = 1.f / sampleRate;
 	}
 	
 	float Ts= 1.f/Fs; //Periodo campionamento
 
 	// internal oscillator state
 	float sampleRate;
+	float Ts = 1.f / 44100.0f;
 
 	MySinthOsc::SawOsc sawOsc1, sawOsc2;	// Sawtooth Oscillator instances
 	MySinthOsc::SquareOsc sqOsc1, sqOsc2;	// Square Oscillator instances
@@ -107,6 +110,14 @@ void MySinth::process(const ProcessArgs &args) {
 		// Voct input is volts per octave: 1V -> octave -> freq multiplier = 2^(Voct)
 		float freq1 = pitch * std::pow(2.0f, Voct_input); 
 		float freq2 = freq1 * std::pow(2.0f, detune / 12.0f);
+
+		// DPW instances for anti-aliased waveforms
+		TsampleRate = args.sampleRate;
+		DPW<float> dpw1, dpw2;
+		dpw1.setPitch(freq1 * Ts);
+		dpw2.setPitch(freq2 * Ts);
+
+		
 
 		//OSC1: saw and square
 		sawOsc1.setSampleRate(args.sampleRate);
