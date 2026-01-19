@@ -7,6 +7,7 @@ namespace StateVariableFilter {
 /**
  *  Filtro a variabili di stato (SVF) di secondo ordine.
  * Implementazione basata sulla topologia TPT (Topology Preserving Transform).
+ * NOTE: resonance deve essere in [0.0f, 0.99f] per stabilità (perché G<1).
  */
     class StateVarFil {
      public:
@@ -20,18 +21,22 @@ namespace StateVariableFilter {
         /**
         * Calcola i coefficienti. Da chiamare quando cambiano i parametri.
         * @param cutoff Frequenza in Hz (es. 20.0f a 18000.0f)
-        * @param resonance Qualità del filtro (0.0f a 1.0f)
+        * @param resonance Qualità del filtro (MUST be in [0.0f, 0.99f] for stability)
         * @param sampleRate Frequenza di campionamento corrente
         */
         void updateParameters(float cutoff, float resonance, float sampleRate) {
             // Clamp di sicurezza per la frequenza
-            cutoff = std::max(10.0f, std::min(cutoff, sampleRate * 0.45f)); // Wc: Evita aliasing oltre Nyquist
+            cutoff = std::max(10.0f, std::min(cutoff, sampleRate * 0.45f)); // Evita aliasing oltre Nyquist
         
-            // Calcolo coefficiente g (frequenza pre-warp)
-            g = cutoff/(sampleRate * 2.0f);
+            // Calcolo coefficiente g con pre-warping corretto per SVF a topologia TPT
+            float wc = 2.0f * M_PI * cutoff / sampleRate;
+            g = std::tan(wc / 2.0f);
+            // Clamp g per evitare instabilità numerica
+            g = std::min(g, 1.0f);
         
-            // Mappatura risonanza: 1.0f - resonance produce un damping pulito.
-            // k controlla il feedback del filtro.
+            // Mappatura risonanza (damping): 1.0f - resonance produce un damping pulito.
+            // k controlla il feedback del filtro, deve restare positivo e < 2.0
+            resonance = std::max(0.0f, std::min(resonance, 0.99f)); // Clamp di sicurezza
             k = 2.0f - 2.0f * resonance;
         }
        /* enum class FilterMode {
@@ -56,9 +61,9 @@ namespace StateVariableFilter {
     public:
     //Processa un singolo campione audio.
     float process(float input) {
-        // Risoluzione analitica del loop di feedback (Zero-Delay)
-        float d = 1.0f + g * (g + k); 
-        float a = 2.0f * k + g;  
+        // Risoluzione analitica del loop di feedback (Zero-Delay) con formule corrette per SVF TPT
+        float d = 1.0f + g * k + g * g; 
+        float a = k + g;  
         float Yh = (input - a * s1 - s2) / d;
         float Yb  = g * Yh + s1;
         s1 = g * Yh + Yb;   // Aggiornamento stato (Metodo trapezoidale)
@@ -67,9 +72,13 @@ namespace StateVariableFilter {
         
         return Yl;
     }
+
+    //Ci serviranno in MySinth per salvare i vecchi valori di cutoff e resonance e controllare se sono cambiati
+    float cutoff_old = 0.0f;
+    float resonance_old = 0.0f;
 };
 
-} // namespace MySinthDSP
+} // namespace StateVariableFilter
 
 
 

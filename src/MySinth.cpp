@@ -137,12 +137,18 @@ void MySinth::process(const ProcessArgs &args) {
 		//------------- LPF processing ----------------
 		// Modulation of cutoff with input CV
 		if (inputs[CUT_OFF_IN].isConnected()) cutoff += rescale(inputs[CUT_OFF_IN].getVoltage(), -10.0f, 10.0f, 20.0f, 20000.0f);
-		// Aggiorna i parametri del filtro
-		SVFilter1.updateParameters(cutoff, resonance, sampleRate);
-		SVFilter2.updateParameters(cutoff, resonance, sampleRate);
+		// Aggiorna i parametri del filtro, solo se sono cambiati i parametri cutoff o resonance
+		if (cutoff != SVFilter1.cutoff_old || resonance != SVFilter1.resonance_old) SVFilter1.updateParameters(cutoff, resonance, sampleRate);
+		if (cutoff != SVFilter2.cutoff_old || resonance != SVFilter2.resonance_old) SVFilter2.updateParameters(cutoff, resonance, sampleRate);
+		//Salviamo i vecchi valori per il prossimo ciclo
+		SVFilter1.cutoff_old = cutoff;
+		SVFilter2.cutoff_old = cutoff;
+		SVFilter1.resonance_old = resonance;
+		SVFilter2.resonance_old = resonance;
 		// Processa il segnale attraverso due LPF in serie
 		float lpf_out1 = SVFilter1.process(Y_in_the_middle);
 		float lpf_out2 = SVFilter2.process(lpf_out1);
+
 
 		// Set outputs
 		outputs[OUT1].setVoltage(out_osc1);	
