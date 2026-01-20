@@ -41,6 +41,7 @@ struct DPW {
 	DPW() {
 		waveType = TYPE_SAW;
 		memset(diffB, 0, sizeof(T));
+		tri_old = 0.0;
 		paramsCompute();
 		init = dpwOrder;
 	}
@@ -51,6 +52,7 @@ struct DPW {
 
 		dpwOrder = newdpw;
 		memset(diffB, 0, sizeof(diffB));
+		tri_old = 0.0;
 		paramsCompute();
 		init = dpwOrder;
 		return newdpw;
@@ -131,10 +133,17 @@ struct DPW {
 		switch(type) {
 		case TYPE_SAW:
 			return 2 * phase - 1;
-		case TYPE_SQU:	
-			return (phase < 0.5) ? 1.0 : -1.0; // Square wave with 50% duty cycle
 		case TYPE_TRI:
 			return (phase < 0.5) ? (4.0 * phase - 1.0) : (3.0 - 4.0 * phase);
+		case TYPE_SQU: {
+			// Square as numerical derivative of triangle wave
+			// The triangle has slope ±4, so we need to normalize the derivative
+			T tri = (phase < 0.5) ? (4.0 * phase - 1.0) : (3.0 - 4.0 * phase);
+			T dt = pitch * APP->engine->getSampleTime();
+			T sqr = (dt > 0.0) ? (tri - tri_old) / dt * 0.25 : 0.0;  // Normalize by 1/4
+			tri_old = tri;
+			return sqr;
+		}
 		default:
 			return 0;
 		}
@@ -158,4 +167,6 @@ struct DPW {
 		}
 	}
 
+private:
+	T tri_old = 0.0; // Per calcolare la derivata numerica della onda triangolare -> square
 };
