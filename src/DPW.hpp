@@ -56,9 +56,7 @@ struct DPW {
 		return newdpw;
 	}
 
-	/**
-	 * 	Differentiate ord-1 times
-	 */
+	//	Differentiate ord-1 times 
 	T dpwDiff(int ord) {
 		ord = clamp(ord, 0, MAX_ORDER);
 
@@ -80,13 +78,22 @@ struct DPW {
 		return tmpA[0];
 	}
 
-	/**
-	 * Compute the polynomial and call the diff
-	 */
+	
+	//Compute the polynomial (until fourth) and call the differentiator
 	T process() {
+		
+		// For square wave, DPW doesn't work well - use trivial waveform
+		// TODO: Implement proper band-limited square (PolyBLEP or MinBLEP)
+		if (waveType == TYPE_SQU && dpwOrder > 1) {
+			T triv = trivialStep(waveType);
+			phase += pitch * APP->engine->getSampleTime();
+			if (phase >= 1.0) phase -= 1.0;
+			return triv;
+		}
 
+		// Standard DPW for SAW and TRI
 		// next step of the trivial waveform, advance phase
-		T triv = trivialStep(phase);
+		T triv = trivialStep(waveType);
 		phase += pitch * APP->engine->getSampleTime();
 		if (phase >= 1.0) phase -= 1.0;
 
@@ -118,9 +125,8 @@ struct DPW {
 		return dpwDiff(dpwOrder);
 	}
 
-	/*
-	 * Generate the trivial waveform
-	 */
+	
+	// Generate the trivial waveform
 	T trivialStep(int type) {
 		switch(type) {
 		case TYPE_SAW:
@@ -134,9 +140,8 @@ struct DPW {
 		}
 	}
 
-	/*
-	 * Diff gain compute
-	 */
+	
+	//Diff gain compute
 	void paramsCompute() {
 
 		if (dpwOrder > 1)
