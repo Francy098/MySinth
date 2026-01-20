@@ -81,8 +81,6 @@ struct MySinth : Module {
 		// Inizializza DPW oscillators con ordine 2 per buon compromesso qualità/performance
 		dpw1.onDPWOrderChange(DPW_2);
 		dpw2.onDPWOrderChange(DPW_2);
-		dpw1.setSampleRate(sampleRate);
-		dpw2.setSampleRate(sampleRate);
 	}
 
 	void onSampleRateChange() override {
@@ -215,7 +213,7 @@ void MySinth::process(const ProcessArgs &args) {
 
 		setModule(module);
 		setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/ATemplate.svg")));
-		box.size = Vec(30*RACK_GRID_WIDTH, RACK_GRID_HEIGHT);
+		box.size = Vec(35*RACK_GRID_WIDTH, RACK_GRID_HEIGHT);
 
 		{
 			ATitle * title = new ATitle(box.size.x);
@@ -397,41 +395,40 @@ void MySinth::process(const ProcessArgs &args) {
 
 		//----------------- Envelope Generator - VCA ----------------------
 		{
-			ATextLabel * lblEnv = new ATextLabel(Vec(350, 10));
-			lblEnv->setText("ENVELOPE");
+			ATextLabel * lblEnv = new ATextLabel(Vec(340+90, 10));
+			lblEnv->setText("EG - VCA");
 			addChild(lblEnv);
 		}
 		{
-			ATextLabel * lblAttack = new ATextLabel(Vec(340, 40));
+			ATextLabel * lblAttack = new ATextLabel(Vec(340+100, 40));
 			lblAttack->setText("Attack");
 			addChild(lblAttack);
 		}
-		addParam(createParam<RoundBlackKnob>(Vec(350, 70), module, MySinth::ATTACK_PARAM));
+		addParam(createParam<RoundBlackKnob>(Vec(350+100, 70), module, MySinth::ATTACK_PARAM));
 		{
-			ATextLabel * lblDecay = new ATextLabel(Vec(340, 110));
+			ATextLabel * lblDecay = new ATextLabel(Vec(340+105, 110-10));
 			lblDecay->setText("Decay");
 			addChild(lblDecay);
 		}	
-		addParam(createParam<RoundBlackKnob>(Vec(350, 140), module, MySinth::DECAY_PARAM));
+		addParam(createParam<RoundBlackKnob>(Vec(350+100, 140-10), module, MySinth::DECAY_PARAM));
 		{
-			ATextLabel * lblSustain = new ATextLabel(Vec(330, 180));
+			ATextLabel * lblSustain = new ATextLabel(Vec(330+105, 180-20));
 			lblSustain->setText("Sustain");
 			addChild(lblSustain);
 		}
-		addParam(createParam<RoundBlackKnob>(Vec(350, 210), module, MySinth::SUSTAIN_PARAM));
+		addParam(createParam<RoundBlackKnob>(Vec(350+100, 210-20), module, MySinth::SUSTAIN_PARAM));
 		{
-			ATextLabel * lblRelease = new ATextLabel(Vec(340, 250));
+			ATextLabel * lblRelease = new ATextLabel(Vec(340+95, 250-30));
 			lblRelease->setText("Release");
 			addChild(lblRelease);
 		}
-		addParam(createParam<RoundBlackKnob>(Vec(350, 280), module, MySinth::RELEASE_PARAM));
+		addParam(createParam<RoundBlackKnob>(Vec(350+100, 280-30), module, MySinth::RELEASE_PARAM));
 		{
-			ATextLabel * lblOutLPF = new ATextLabel(Vec(340, 320));
+			ATextLabel * lblOutLPF = new ATextLabel(Vec(340+100, 320-40));
 			lblOutLPF->setText("OUT_ENV");
 			addChild(lblOutLPF);
 		}
-		addOutput(createOutput<PJ3410Port>(Vec(350, 350), module, MySinth::OUTPUT_ENVELOPE));
-
+		addOutput(createOutput<PJ3410Port>(Vec(350+100, 350-40), module, MySinth::OUTPUT_ENVELOPE));
 	}
 
 	Model *modelMySinth = createModel<MySinth, MySinthWidget>("MySinth");
