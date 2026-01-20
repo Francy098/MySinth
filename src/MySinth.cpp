@@ -5,30 +5,37 @@
 #include "DPW.hpp"			//DPW anti-aliased oscillators
 #include "LFO_MySinth.hpp"
 #include "LPF_MySinth.hpp"
+#include "ADSR_MySinth.hpp"
 
 
 #define TRIG_TIME 1e-3f
 #define Fs 44100 //Hz -> Freq di campionamento
 
+
 struct MySinth : Module {
 	enum ParamIds {
-            //------------------------ OSCILLATORI ---------------------------
-			PITCH, // potenziometro di pitch (FREQUENZA)
-            DETUNE, // potenziometro di detune in semitoni
-            LEVEL1, // level controllo per osc1 (0..1)
-            LEVEL2, // level controllo per osc2 (0..1)
-			OSC_WAVE1, // selettore forma d'onda (CKSS): 0 = saw, 1 = square
-			OSC_WAVE2,  // selettore forma d'onda (CKSS): 0 = saw, 1 = square
-            LFO_AMOUNT, // profondità di modulazione
-            //------------------------- LFO ---------------------------------
-            RATE,  // velocità di LFO
-			//------------------------- NOISE -----------------------------
-			NOISE_LEVEL, // livello del rumore
-			LFO_AMOUNT_NOISE, // profondità di modulazione del rumore
-			//------------------------ LPF ------------------------------
-			CUT_OFF, // Cutoff LPF
-			RESONANCE,    // Risonanza LPF
-        NUM_PARAMS,
+        //------------------------ OSCILLATORI ---------------------------
+		PITCH, // potenziometro di pitch (FREQUENZA)
+        DETUNE, // potenziometro di detune in semitoni
+        LEVEL1, // level controllo per osc1 (0..1)
+        LEVEL2, // level controllo per osc2 (0..1)
+		OSC_WAVE1, // selettore forma d'onda (CKSS): 0 = saw, 1 = square
+		OSC_WAVE2,  // selettore forma d'onda (CKSS): 0 = saw, 1 = square
+        LFO_AMOUNT, // profondità di modulazione
+        //------------------------- LFO ---------------------------------
+        RATE,  // velocità di LFO
+		//------------------------- NOISE -----------------------------
+		NOISE_LEVEL, // livello del rumore
+		LFO_AMOUNT_NOISE, // profondità di modulazione del rumore
+		//------------------------ LPF ------------------------------
+		CUT_OFF, // Cutoff LPF
+		RESONANCE,    // Risonanza LPF
+		//------------------------ Envelope Generator - VCA -----------------------------
+		ATTACK_PARAM,
+		DECAY_PARAM,
+		SUSTAIN_PARAM,
+		RELEASE_PARAM,
+       	NUM_PARAMS,
 	};
 	enum InputIds {
         VOCT,   //V/Oct input
@@ -41,6 +48,7 @@ struct MySinth : Module {
         LFO_OUT, //Output LFO
 		OUT_MIDDLE, //Output somma oscillatori + rumore
 		OUT_LPF, //Output LPF
+		OUTPUT_ENVELOPE, // Output Envelope Generator - VCA
 		NUM_OUTPUTS,
 	};
 	enum LightsIds { //luce estetica
@@ -61,14 +69,20 @@ struct MySinth : Module {
 		configParam(LFO_AMOUNT_NOISE, 0.0f, 1.0f, 1.0f, "LFO AMOUNT NOISE");
 		configParam(CUT_OFF, 20.0f, 20000.0f, 1000.0f, "LPF CUTOFF");	// Cutoff LPF
 		configParam(RESONANCE, 0.0f, 0.99f,	0.5f, "LPF RESONANCE"); // Evitare 1.0f per stabilità
+		configParam(ATTACK_PARAM, 0.f, 1.f, 0.5f, "ATTACK");
+		configParam(DECAY_PARAM, 0.f, 1.f, 0.5f, "DECAY");
+		configParam(SUSTAIN_PARAM, 0.f, 1.f, 0.5f, "SUSTAIN");
+		configParam(RELEASE_PARAM, 0.f, 1.f, 0.5f, "RELEASE");
 
 		sampleRate = 44100.0f;
-		//lfo.reset(0.0); // reset phase to 0
-		
+		lfo.reset(0.0); // reset phase to 0
+		envelopeGen.reset();
+
 		// Inizializza DPW oscillators con ordine 2 per buon compromesso qualità/performance
 		dpw1.onDPWOrderChange(DPW_2);
 		dpw2.onDPWOrderChange(DPW_2);
-		lfo.reset(0.0); // reset phase to 0
+		dpw1.setSampleRate(sampleRate);
+		dpw2.setSampleRate(sampleRate);
 	}
 
 	void onSampleRateChange() override {
@@ -89,7 +103,8 @@ struct MySinth : Module {
 	DPW<float> dpw1, dpw2;					// DPW anti-aliased oscillators
 	LowFrequencyOscillator::MySinthLFO lfo; // LFO instance (value)
 	NoiseGenerator::WhiteNoise WhiteNoise;	 // White Noise instance
-	StateVariableFilter::StateVarFil SVFilter1, SVFilter2; // LPF instance
+	StateVariableFilter::StateVarFil SVFilter1, SVFilter2; // LPF instance (2 in series)
+	EnvelopeGenerator::ADSR envelopeGen; // Envelope Generator instance
 
 	void process(const ProcessArgs &args) override;
 };
@@ -105,7 +120,12 @@ void MySinth::process(const ProcessArgs &args) {
 		float noise_level = params[NOISE_LEVEL].getValue();
         float lfo_amount_noise = params[LFO_AMOUNT_NOISE].getValue();
 		float cutoff = params[CUT_OFF].getValue();
-		float resonance = params[RESONANCE].getValue();	
+		float resonance = params[RESONANCE].getValue();
+		float att = params[ATTACK_PARAM].getValue();
+		float dec = params[DECAY_PARAM].getValue();
+		float sus = params[SUSTAIN_PARAM].getValue();
+		float rel = params[RELEASE_PARAM].getValue();
+
 
 		//------------ LFO processing (use member lfo)------------
 		lfo.setSampleRate(args.sampleRate);
@@ -162,12 +182,24 @@ void MySinth::process(const ProcessArgs &args) {
 		float lpf_out1 = SVFilter1.process(Y_in_the_middle);
 		float lpf_out2 = SVFilter2.process(lpf_out1);
 
+		//--------------- Envelope Generator processing ----------------
+		envelopeGen.setAttack(att);
+		envelopeGen.setDecay(dec);
+		envelopeGen.setSustain(sus);
+		envelopeGen.setRelease(rel);
+		// Gate semplice: VOCT > 1V
+		bool gate = inputs[VOCT].getVoltage() > 1.0f;
+		float env_out = envelopeGen.process(gate, args.sampleTime);
+		// Apply envelope to final output
+		lpf_out2 *= env_out;
+
 
 		// Set outputs
 		outputs[OUT1].setVoltage(out_osc1);	
 		outputs[OUT2].setVoltage(out_osc2);
 		outputs[OUT_MIDDLE].setVoltage(Y_in_the_middle);
 		outputs[OUT_LPF].setVoltage(lpf_out2);	// Final LPF output
+		outputs[OUTPUT_ENVELOPE].setVoltage(5.0f * env_out); // Envelope monitor
 	}
 
 
@@ -331,6 +363,7 @@ void MySinth::process(const ProcessArgs &args) {
 			addChild(lblLfoNoise);
 		}
 		addParam(createParam<RoundBlackKnob>(Vec(180+60, 140), module, MySinth::LFO_AMOUNT_NOISE));
+		
 		//----------------- LPF ----------------------
 		{
 			ATextLabel * lblLPF = new ATextLabel(Vec(260+90, 10));
@@ -361,6 +394,44 @@ void MySinth::process(const ProcessArgs &args) {
 			addChild(lblOutLPF);
 		}
 		addOutput(createOutput<PJ3410Port>(Vec(260+90, 280), module, MySinth::OUT_LPF));
+
+		//----------------- Envelope Generator - VCA ----------------------
+		{
+			ATextLabel * lblEnv = new ATextLabel(Vec(350, 10));
+			lblEnv->setText("ENVELOPE");
+			addChild(lblEnv);
+		}
+		{
+			ATextLabel * lblAttack = new ATextLabel(Vec(340, 40));
+			lblAttack->setText("Attack");
+			addChild(lblAttack);
+		}
+		addParam(createParam<RoundBlackKnob>(Vec(350, 70), module, MySinth::ATTACK_PARAM));
+		{
+			ATextLabel * lblDecay = new ATextLabel(Vec(340, 110));
+			lblDecay->setText("Decay");
+			addChild(lblDecay);
+		}	
+		addParam(createParam<RoundBlackKnob>(Vec(350, 140), module, MySinth::DECAY_PARAM));
+		{
+			ATextLabel * lblSustain = new ATextLabel(Vec(330, 180));
+			lblSustain->setText("Sustain");
+			addChild(lblSustain);
+		}
+		addParam(createParam<RoundBlackKnob>(Vec(350, 210), module, MySinth::SUSTAIN_PARAM));
+		{
+			ATextLabel * lblRelease = new ATextLabel(Vec(340, 250));
+			lblRelease->setText("Release");
+			addChild(lblRelease);
+		}
+		addParam(createParam<RoundBlackKnob>(Vec(350, 280), module, MySinth::RELEASE_PARAM));
+		{
+			ATextLabel * lblOutLPF = new ATextLabel(Vec(340, 320));
+			lblOutLPF->setText("OUT_ENV");
+			addChild(lblOutLPF);
+		}
+		addOutput(createOutput<PJ3410Port>(Vec(350, 350), module, MySinth::OUTPUT_ENVELOPE));
+
 	}
 
 	Model *modelMySinth = createModel<MySinth, MySinthWidget>("MySinth");
