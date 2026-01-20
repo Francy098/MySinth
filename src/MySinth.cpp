@@ -6,6 +6,7 @@
 #include "LFO_MySinth.hpp"
 #include "LPF_MySinth.hpp"
 #include "ADSR_MySinth.hpp"
+#include "VCA_MySinth.hpp"
 
 
 #define TRIG_TIME 1e-3f
@@ -49,7 +50,7 @@ struct MySinth : Module {
         LFO_OUT, //Output LFO
 		OUT_MIDDLE, //Output somma oscillatori + rumore
 		OUT_LPF, //Output LPF
-		OUTPUT_ENVELOPE, // Output Envelope Generator - VCA
+		OUTPUT_FINAL, // Final output after envelope e VCA
 		NUM_OUTPUTS,
 	};
 	enum LightsIds { //luce estetica
@@ -104,6 +105,7 @@ struct MySinth : Module {
 	NoiseGenerator::WhiteNoise WhiteNoise;	 // White Noise instance
 	StateVariableFilter::StateVarFil SVFilter1, SVFilter2; // LPF instance (2 in series)
 	EnvelopeGenerator::ADSR envelopeGen; // Envelope Generator instance
+	VCAGenerator::VCA vca; // VCA instance
 
 	void process(const ProcessArgs &args) override;
 };
@@ -189,8 +191,11 @@ void MySinth::process(const ProcessArgs &args) {
 		// Gate semplice: VOCT > 1V
 		bool gate = inputs[GATE_IN].getVoltage() > 1.0f;
 		float env_out = envelopeGen.process(gate, args.sampleTime);
-		// Apply envelope to final output
-		lpf_out2 *= env_out;
+		
+		//--------------- VCA processing ----------------
+		vca.setLevel(1.0f); // level knob at max (perché non c'è nella definizione del modulo)
+		vca.setCv(env_out / 1.2f); // Set CV-Control Voltage normalize envelope to [0,1]
+		float final_output = vca.process(lpf_out2);	// Apply envelope to final output using VCA
 
 
 		// Set outputs
@@ -198,7 +203,7 @@ void MySinth::process(const ProcessArgs &args) {
 		outputs[OUT2].setVoltage(out_osc2);
 		outputs[OUT_MIDDLE].setVoltage(Y_in_the_middle);
 		outputs[OUT_LPF].setVoltage(lpf_out2);	// Final LPF output
-		outputs[OUTPUT_ENVELOPE].setVoltage(5.0f * lpf_out2); // Envelope monitor
+		outputs[OUTPUT_FINAL].setVoltage(final_output); // Final output after VCA with envelope
 	}
 
 
@@ -432,10 +437,10 @@ void MySinth::process(const ProcessArgs &args) {
 		addInput(createInput<PJ3410Port>(Vec(350+70, 350-40), module, MySinth::GATE_IN));
 		{
 			ATextLabel * lblOutLPF = new ATextLabel(Vec(340+120, 320-40));
-			lblOutLPF->setText("OUT_ENV");
+			lblOutLPF->setText("OUT_FINAL");
 			addChild(lblOutLPF);
 		}
-		addOutput(createOutput<PJ3410Port>(Vec(350+120, 350-40), module, MySinth::OUTPUT_ENVELOPE));
+		addOutput(createOutput<PJ3410Port>(Vec(350+120, 350-40), module, MySinth::OUTPUT_FINAL));
 	}
 
 	Model *modelMySinth = createModel<MySinth, MySinthWidget>("MySinth");
