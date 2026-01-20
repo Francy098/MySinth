@@ -111,6 +111,8 @@ void MySinth::process(const ProcessArgs &args) {
 		lfo.setSampleRate(args.sampleRate);
 		lfo.setRate(lfo_rate);
 		float lfo_out = lfo.process(); // lfo_out range [-1,1]
+		// If LFO rate is very low, don't modulate
+		if (lfo_rate < 0.01f) lfo_out = 0.0f;
 		outputs[LFO_OUT].setVoltage(5.0f * lfo_out); // LFO output scaled to +/-5V
 
 		//------------ DPW Oscillators processing ----------------
