@@ -63,11 +63,12 @@ struct MySinth : Module {
 		configParam(RESONANCE, 0.0f, 0.99f,	0.5f, "LPF RESONANCE"); // Evitare 1.0f per stabilità
 
 		sampleRate = 44100.0f;
-		lfo.reset(0.0); // reset phase to 0
+		//lfo.reset(0.0); // reset phase to 0
 		
 		// Inizializza DPW oscillators con ordine 2 per buon compromesso qualità/performance
 		dpw1.onDPWOrderChange(DPW_2);
 		dpw2.onDPWOrderChange(DPW_2);
+		lfo.reset(0.0); // reset phase to 0
 	}
 
 	void onSampleRateChange() override {

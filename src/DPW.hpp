@@ -10,6 +10,8 @@
  *
  *-----------------------------------------------------------------*/
 
+#pragma once
+
 #include "rack.hpp"
 
 using namespace rack;
@@ -40,7 +42,7 @@ struct DPW {
 
 	DPW() {
 		waveType = TYPE_SAW;
-		memset(diffB, 0, sizeof(T));
+		memset(diffB, 0, sizeof(diffB));
 		tri_old = 0.0;
 		paramsCompute();
 		init = dpwOrder;
