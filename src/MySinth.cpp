@@ -40,6 +40,7 @@ struct MySinth : Module {
 	enum InputIds {
         VOCT,   //V/Oct input
 		CUT_OFF_IN, // Cutoff CV input
+		GATE_IN, // Gate input for Envelope Generator
 		NUM_INPUTS,
 	};
 	enum OutputIds { 
@@ -186,7 +187,7 @@ void MySinth::process(const ProcessArgs &args) {
 		envelopeGen.setSustain(sus);
 		envelopeGen.setRelease(rel);
 		// Gate semplice: VOCT > 1V
-		bool gate = inputs[VOCT].getVoltage() > 1.0f;
+		bool gate = inputs[GATE_IN].getVoltage() > 1.0f;
 		float env_out = envelopeGen.process(gate, args.sampleTime);
 		// Apply envelope to final output
 		lpf_out2 *= env_out;
@@ -197,7 +198,7 @@ void MySinth::process(const ProcessArgs &args) {
 		outputs[OUT2].setVoltage(out_osc2);
 		outputs[OUT_MIDDLE].setVoltage(Y_in_the_middle);
 		outputs[OUT_LPF].setVoltage(lpf_out2);	// Final LPF output
-		outputs[OUTPUT_ENVELOPE].setVoltage(5.0f * env_out); // Envelope monitor
+		outputs[OUTPUT_ENVELOPE].setVoltage(5.0f * lpf_out2); // Envelope monitor
 	}
 
 
@@ -424,11 +425,17 @@ void MySinth::process(const ProcessArgs &args) {
 		}
 		addParam(createParam<RoundBlackKnob>(Vec(350+100, 280-30), module, MySinth::RELEASE_PARAM));
 		{
-			ATextLabel * lblOutLPF = new ATextLabel(Vec(340+100, 320-40));
+			ATextLabel * lblGateIn = new ATextLabel(Vec(340+65, 320-40));
+			lblGateIn->setText("GATE_IN");
+			addChild(lblGateIn);
+		}
+		addInput(createInput<PJ3410Port>(Vec(350+70, 350-40), module, MySinth::GATE_IN));
+		{
+			ATextLabel * lblOutLPF = new ATextLabel(Vec(340+120, 320-40));
 			lblOutLPF->setText("OUT_ENV");
 			addChild(lblOutLPF);
 		}
-		addOutput(createOutput<PJ3410Port>(Vec(350+100, 350-40), module, MySinth::OUTPUT_ENVELOPE));
+		addOutput(createOutput<PJ3410Port>(Vec(350+120, 350-40), module, MySinth::OUTPUT_ENVELOPE));
 	}
 
 	Model *modelMySinth = createModel<MySinth, MySinthWidget>("MySinth");
