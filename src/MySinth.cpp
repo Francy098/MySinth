@@ -1,8 +1,8 @@
 #include "ABC.hpp"
 #include "Noise_MySinth.hpp"
 #include "dsp/digital.hpp"
-#include "Osc_MySinth.hpp"
-#include "DPW.hpp"
+#include "Osc_MySinth.hpp" //trivial oscillators
+#include "DPW.hpp"			//DPW anti-aliased oscillators
 #include "LFO_MySinth.hpp"
 #include "LPF_MySinth.hpp"
 
@@ -64,21 +64,28 @@ struct MySinth : Module {
 
 		sampleRate = 44100.0f;
 		lfo.reset(0.0); // reset phase to 0
+		
+		// Inizializza DPW oscillators con ordine 2 per buon compromesso qualità/performance
+		dpw1.onDPWOrderChange(DPW_2);
+		dpw2.onDPWOrderChange(DPW_2);
 	}
 
 	void onSampleRateChange() override {
 		sampleRate = APP->engine->getSampleRate();
 		Ts = 1.f / sampleRate;
+		// Ricalcola parametri DPW quando cambia il sample rate
+		dpw1.paramsCompute();
+		dpw2.paramsCompute();
 	}
 	
 	float Ts= 1.f/Fs; //Periodo campionamento
 
 	// internal oscillator state
 	float sampleRate;
-	float Ts = 1.f / 44100.0f;
 
-	MySinthOsc::SawOsc sawOsc1, sawOsc2;	// Sawtooth Oscillator instances
-	MySinthOsc::SquareOsc sqOsc1, sqOsc2;	// Square Oscillator instances
+	MySinthOsc::SawOsc sawOsc1, sawOsc2;	// Sawtooth Oscillator instances (trivial)
+	MySinthOsc::SquareOsc sqOsc1, sqOsc2;	// Square Oscillator instances (trivial)
+	DPW<float> dpw1, dpw2;					// DPW anti-aliased oscillators
 	LowFrequencyOscillator::MySinthLFO lfo; // LFO instance (value)
 	NoiseGenerator::WhiteNoise WhiteNoise;	 // White Noise instance
 	StateVariableFilter::StateVarFil SVFilter1, SVFilter2; // LPF instance
@@ -99,53 +106,45 @@ void MySinth::process(const ProcessArgs &args) {
 		float cutoff = params[CUT_OFF].getValue();
 		float resonance = params[RESONANCE].getValue();	
 
-		// LFO processing (use member lfo)
+		//------------ LFO processing (use member lfo)------------
 		lfo.setSampleRate(args.sampleRate);
 		lfo.setRate(lfo_rate);
 		float lfo_out = lfo.process(); // lfo_out range [-1,1]
 		outputs[LFO_OUT].setVoltage(5.0f * lfo_out); // LFO output scaled to +/-5V
 
-
-        // Compute frequencies
+		//------------ DPW Oscillators processing ----------------
+        // Compute frequencies with LFO modulation
 		// Voct input is volts per octave: 1V -> octave -> freq multiplier = 2^(Voct)
-		float freq1 = pitch * std::pow(2.0f, Voct_input); 
-		float freq2 = freq1 * std::pow(2.0f, detune / 12.0f);
-
-		// DPW instances for anti-aliased waveforms
-		TsampleRate = args.sampleRate;
-		DPW<float> dpw1, dpw2;
-		dpw1.setPitch(freq1 * Ts);
-		dpw2.setPitch(freq2 * Ts);
-
+		float freq1_base = pitch * std::pow(2.0f, Voct_input); // base frequency osc1
+		float freq2_base = freq1_base * std::pow(2.0f, detune / 12.0f); // detune in semitones
 		
-
-		//OSC1: saw and square
-		sawOsc1.setSampleRate(args.sampleRate);
-		sawOsc1.setFrequency(freq1 + lfo_out * lfo_amount * freq1); //modulazione di frequenza con LFO
-		sqOsc1.setSampleRate(args.sampleRate);
-		sqOsc1.setFrequency( freq1 + lfo_out * lfo_amount * freq1); //modulazione di frequenza con LFO
-
-		//OSC2: saw and square
-		sawOsc2.setSampleRate(args.sampleRate);
-		sawOsc2.setFrequency(freq2 + lfo_out * lfo_amount * freq2); //modulazione di frequenza con LFO
-		sqOsc2.setSampleRate(args.sampleRate);
-		sqOsc2.setFrequency( freq2 + lfo_out * lfo_amount * freq2); //modulazione di frequenza con LFO
+		// Apply LFO modulation to frequencies
+		float freq1 = freq1_base * (1.0f + lfo_out * lfo_amount);
+		float freq2 = freq2_base * (1.0f + lfo_out * lfo_amount);
 
 		// Waveform selection
 		float waveSel1 = params[OSC_WAVE1].getValue();
 		float waveSel2 = params[OSC_WAVE2].getValue();
 
-		// Outputs scaled to +/-5V and apply respective level
-		float out_osc1 = (waveSel1 < 0.5f) ? 5.0f * sawOsc1.process() * level1 : 5.0f * sqOsc1.process() * level1;
-		float out_osc2 = (waveSel2 < 0.5f) ? 5.0f * sawOsc2.process() * level2 : 5.0f * sqOsc2.process() * level2;
+		// Set waveform types for DPW oscillators
+		dpw1.waveType = (waveSel1 < 0.5f) ? TYPE_SAW : TYPE_SQU;	
+		dpw2.waveType = (waveSel2 < 0.5f) ? TYPE_SAW : TYPE_SQU;
+		
+		// Set pitch (normalized frequency: freq * sampleTime)
+		dpw1.setPitch(freq1); // pitch = frequency in Hz * sample time (1/sampleRate)
+		dpw2.setPitch(freq2);
+		
+		// Generate DPW anti-aliased waveforms, scaled to +/-5V with respective levels
+		float out_osc1 = 5.0f * dpw1.process() * level1;
+		float out_osc2 = 5.0f * dpw2.process() * level2;
 
-		//White Noise output
+		//-------------- White Noise output----------------
 		float out_noise = WhiteNoise.process(); //rumore bianco
 		out_noise += out_noise * lfo_out * lfo_amount_noise;	// Modulation of noise level with LFO
 		//Output in the middle (somma di oscillatori e rumore)
-		float Y_in_the_middle = (out_osc1 + out_osc2) / 2.0f + out_noise*noise_level; // somma dei due oscillatori e del rumore per il livello rumore
+		float Y_in_the_middle = (out_osc1 + out_osc2) * 0.5f + out_noise*noise_level; // somma dei due oscillatori e del rumore per il livello rumore
 
-		//------------- LPF processing ----------------
+		//--------------- LPF processing ----------------
 		// Modulation of cutoff with input CV
 		if (inputs[CUT_OFF_IN].isConnected()) cutoff += rescale(inputs[CUT_OFF_IN].getVoltage(), -10.0f, 10.0f, 20.0f, 20000.0f);
 		// Aggiorna i parametri del filtro, solo se sono cambiati i parametri cutoff o resonance

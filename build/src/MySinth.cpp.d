@@ -65,8 +65,8 @@ build/src/MySinth.cpp.o: src/MySinth.cpp src/ABC.hpp \
  ../..//include/dsp/approx.hpp ../..//include/dsp/midi.hpp \
  ../..//include/dsp/filter.hpp ../..//include/dsp/digital.hpp \
  ../..//include/dsp/vumeter.hpp ../..//include/dsp/convert.hpp \
- src/Noise_MySinth.hpp src/Osc_MySinth.hpp src/LFO_MySinth.hpp \
- src/LPF_MySinth.hpp
+ src/Noise_MySinth.hpp src/Osc_MySinth.hpp src/DPW.hpp \
+ src/LFO_MySinth.hpp src/LPF_MySinth.hpp
 src/ABC.hpp:
 ../..//include/rack.hpp:
 ../..//include/common.hpp:
@@ -194,5 +194,6 @@ src/ABC.hpp:
 ../..//include/dsp/convert.hpp:
 src/Noise_MySinth.hpp:
 src/Osc_MySinth.hpp:
+src/DPW.hpp:
 src/LFO_MySinth.hpp:
 src/LPF_MySinth.hpp:
