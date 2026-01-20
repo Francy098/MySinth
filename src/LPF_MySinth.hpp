@@ -62,12 +62,12 @@ namespace StateVariableFilter {
     //Processa un singolo campione audio.
     float process(float input) {
         // Risoluzione analitica del loop di feedback (Zero-Delay) con formule corrette per SVF TPT
-        float d = 1.0f + g * k + g * g; 
-        float a = k + g;  
-        float Yh = (input - a * s1 - s2) / d;
-        float Yb  = g * Yh + s1;
+        float d = 1.0f + g * k + g * g; // Denominatore comune
+        float a = k + g;    
+        float Yh = (input - a * s1 - s2) / d;   // High-pass output
+        float Yb  = g * Yh + s1;    // Band-pass output
         s1 = g * Yh + Yb;   // Aggiornamento stato (Metodo trapezoidale)
-        float Yl = g * Yb + s2;
+        float Yl = g * Yb + s2; // Low-pass output
         s2 = g * Yb + Yl;   // Aggiornamento stato (Metodo trapezoidale)
         
         return Yl;

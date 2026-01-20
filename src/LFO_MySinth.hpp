@@ -34,7 +34,7 @@ public:
     // Process one sample, returns triangle in -1..1
     inline float process() {
         phase += phaseInc;
-        if (phase >= 1.0) phase -= std::floor(phase);
+        if (phase >= 1.0) phase -= std::floor(phase); // wrap-around phase
         double v = (phase < 0.5) ? (4.0 * phase - 1.0) : (3.0 - 4.0 * phase);
         // Traduzione:
         //(phase < 0.5) siamo nella prima metà del ciclo (0..0.5)?

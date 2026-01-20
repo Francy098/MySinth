@@ -12,8 +12,8 @@ namespace NoiseGenerator {
         WhiteNoise() = default;
 
 		private:
-            std::mt19937 gen{std::random_device{}()};
-            std::normal_distribution<float> dist{0.0f, 1.0f};
+            std::mt19937 gen{std::random_device{}()}; // Mersenne Twister RNG, seeded with random device
+            std::normal_distribution<float> dist{0.0f, 1.0f}; // Distribuzione Gaussiana con media 0 e deviazione standard 1
 
         public:
             float process() {

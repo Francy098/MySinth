@@ -60,7 +60,7 @@ struct DPW {
 		return newdpw;
 	}
 
-	//	Differentiate ord-1 times 
+	//----------	Differentiate ord-1 times 
 	T dpwDiff(int ord) {
 		ord = clamp(ord, 0, MAX_ORDER);
 
@@ -83,19 +83,10 @@ struct DPW {
 	}
 
 	
-	//Compute the polynomial (until fourth) and call the differentiator
+	//----------	Compute the polynomial (until fourth) and call the differentiator
 	T process() {
-		
-		// For square wave, DPW doesn't work well - use trivial waveform
 		// TODO: Implement proper band-limited square (PolyBLEP or MinBLEP)
-		if (waveType == TYPE_SQU && dpwOrder > 1) {
-			T triv = trivialStep(waveType);
-			phase += pitch * APP->engine->getSampleTime();
-			if (phase >= 1.0) phase -= 1.0;
-			return triv;
-		}
 
-		// Standard DPW for SAW and TRI
 		// next step of the trivial waveform, advance phase
 		T triv = trivialStep(waveType);
 		phase += pitch * APP->engine->getSampleTime();
@@ -130,14 +121,14 @@ struct DPW {
 	}
 
 	
-	// Generate the trivial waveform
+	//----------	Generate the trivial waveform
 	T trivialStep(int type) {
 		switch(type) {
-		case TYPE_SAW:
+		case TYPE_SAW:	// Sawtooth wave: range -1..1
 			return 2 * phase - 1;
-		case TYPE_TRI:
+		case TYPE_TRI:	// Triangle wave: range -1..1
 			return (phase < 0.5) ? (4.0 * phase - 1.0) : (3.0 - 4.0 * phase);
-		case TYPE_SQU: {
+		case TYPE_SQU: {	// Square wave as numerical derivative of triangle wave
 			// Square as numerical derivative of triangle wave
 			// The triangle has slope ±4, so we need to normalize the derivative
 			T tri = (phase < 0.5) ? (4.0 * phase - 1.0) : (3.0 - 4.0 * phase);
@@ -153,7 +144,7 @@ struct DPW {
 
 	
 	//Diff gain compute
-	void paramsCompute() {
+	void paramsCompute() { // Call when sample rate or dpwOrder change
 
 		if (dpwOrder > 1)
 			gain = std::pow(1.f / factorial(dpwOrder) * std::pow(M_PI / (2.f*sin(M_PI*pitch * APP->engine->getSampleTime())),
@@ -162,7 +153,7 @@ struct DPW {
 			gain=1.0;
 	}
 
-	void setPitch(T newPitch) {
+	void setPitch(T newPitch) {	// pitch in Hz
 		if (pitch != newPitch) {
 			pitch = newPitch;
 			paramsCompute();
