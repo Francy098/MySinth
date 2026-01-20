@@ -3,15 +3,16 @@
 #include <algorithm>
 #include <cmath>
 
+// Simple VCA class with level and CV control
 namespace VCAGenerator {
 
 // VCA monofonico semplice con controllo level e CV opzionale
 class VCA {
 public:
     // level e cv sono normalizzati in [0,1]
-    void setLevel(float level) { level_ = clamp01(level); }
-    void setCv(float cv) { cv_ = clamp01(cv); }
-    void setExpMode(bool exp) { expMode_ = exp; }
+    void setLevel(float level) { level_ = clamp01(level); } // knob
+    void setCv(float cv) { cv_ = clamp01(cv); } // CV-Control Voltage
+    void setExpMode(bool exp) { expMode_ = exp; }   // exponential mode on/off
 
     // Calcola il gain complessivo (level * cv), con curva opzionale esponenziale
     float gain() const {
