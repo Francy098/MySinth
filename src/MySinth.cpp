@@ -136,7 +136,7 @@ void MySinth::process(const ProcessArgs &args) {
 		if (lfo_rate < 0.01f) lfo_out = 0.0f;
 		outputs[LFO_OUT].setVoltage(5.0f * lfo_out); // LFO output scaled to +/-5V
 
-		//------------ DPW Oscillators processing ----------------
+		//------------ Trivial Oscillators processing ----------------
         // Compute frequencies with LFO modulation
 		// Voct input is volts per octave: 1V -> octave -> freq multiplier = 2^(Voct)
 		float freq1_base = pitch * std::pow(2.0f, Voct_input); // base frequency osc1
@@ -146,11 +146,25 @@ void MySinth::process(const ProcessArgs &args) {
 		float freq1 = freq1_base * (1.0f + lfo_out * lfo_amount);
 		float freq2 = freq2_base * (1.0f + lfo_out * lfo_amount);
 
-		// Waveform selection
+		// Waveform selection: 0 = saw, 1 = square
 		float waveSel1 = params[OSC_WAVE1].getValue();
 		float waveSel2 = params[OSC_WAVE2].getValue();
 
-		// Set waveform types for DPW oscillators
+		// Set sample rate and frequency for oscillators
+		sawOsc1.setSampleRate(args.sampleRate);
+		sawOsc1.setFrequency(freq1);
+		sqOsc1.setSampleRate(args.sampleRate);
+		sqOsc1.setFrequency(freq1);
+		sawOsc2.setSampleRate(args.sampleRate);
+		sawOsc2.setFrequency(freq2);
+		sqOsc2.setSampleRate(args.sampleRate);
+		sqOsc2.setFrequency(freq2);
+
+		// Generate waveforms: 0 = saw, 1 = square, scaled to ±5V with levels
+		float out_osc1 = 5.0f * ((waveSel1 < 0.5f) ? sawOsc1.process() : sqOsc1.process()) * level1;
+		float out_osc2 = 5.0f * ((waveSel2 < 0.5f) ? sawOsc2.process() : sqOsc2.process()) * level2;
+
+		/*// Set waveform types for DPW oscillators
 		dpw1.waveType = (waveSel1 < 0.5f) ? TYPE_SAW : TYPE_SQU;	
 		dpw2.waveType = (waveSel2 < 0.5f) ? TYPE_SAW : TYPE_SQU;
 		
@@ -160,7 +174,7 @@ void MySinth::process(const ProcessArgs &args) {
 		
 		// Generate DPW anti-aliased waveforms, scaled to +/-5V with respective levels
 		float out_osc1 = 5.0f * dpw1.process() * level1;
-		float out_osc2 = 5.0f * dpw2.process() * level2;
+		float out_osc2 = 5.0f * dpw2.process() * level2;*/
 
 		//-------------- White Noise output----------------
 		float out_noise = WhiteNoise.process(); //rumore bianco
