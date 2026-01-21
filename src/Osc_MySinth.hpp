@@ -8,12 +8,12 @@ namespace MySinthOsc {
 // PolyBLEP (Parker's Polynomial Band-Limited Step) anti-aliasing function
 // Reduces aliasing at discontinuities
 inline double polyBLEP(double t) {
-	if (t < -1.0 || t > 1.0) return 0.0;
-	
-	if (t < 0.0) {
+	if (t < -1.0 || t > 1.0) return 0.0; // Outside the transition region
+
+	if (t < 0.0) {	//Position before the discontinuity
 		t += 1.0;
 		return -0.5 * t * t;  // First half of polynomial
-	} else {
+	} else {	// Position after the discontinuity
 		t -= 1.0;
 		return 0.5 * t * t;   // Second half of polynomial
 	}
@@ -30,8 +30,8 @@ public:
 	void reset(double ph = 0.0) { phase = ph - std::floor(ph); }    // reset fase
 	
 	float process() {
-		double lastPhase = phase;
-		phase += phaseInc;	// incrementa fase
+		double lastPhase = phase;	// salva fase del campione precedente
+		phase += phaseInc;	// incrementa fase per questo campione
 		if (phase >= 1.0) phase -= 1.0; // wrap-around fase
 		
 		// Naive square wave output
@@ -40,13 +40,13 @@ public:
 		// Apply PolyBLEP correction at phase wraparound
 		double phaseInc_normalized = phaseInc;  // phaseInc is already normalized
 		
-		// Transition at pulseWidth edge (rising edge for standard square)
+		// Transition at pulseWidth edge (rising edge for standard square), cioè rileva la prima discontinuità
 		if (lastPhase < pulseWidth && phase >= pulseWidth) {
 			double t = (lastPhase + phaseInc - pulseWidth) / phaseInc_normalized;
 			output += polyBLEP(t) * 2.0;  // *2.0 for amplitude correction
 		}
 		
-		// Transition at phase wrap (falling edge)
+		// Transition at phase wrap (falling edge), cioè rileva la seconda discontinuità
 		if (lastPhase < 1.0 && phase < lastPhase) {  // phase wrapped
 			double t = (lastPhase + phaseInc - 1.0) / phaseInc_normalized;
 			output -= polyBLEP(t) * 2.0;  // *2.0 for amplitude correction
@@ -84,7 +84,7 @@ public:
 		
 		// PolyBLEP correction at phase wraparound
 		double phaseInc_normalized = phaseInc;
-		if (lastPhase > phase) {  // phase wrapped around
+		if (lastPhase > phase) {  // phase wrapped around, detect discontinuity. Perché qui di discontinuità ce n'è solo una
 			double t = (lastPhase + phaseInc - 1.0) / phaseInc_normalized;
 			output -= polyBLEP(t) * 2.0;  // Subtract discontinuity jump
 		}
