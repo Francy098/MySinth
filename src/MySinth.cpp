@@ -124,7 +124,7 @@ void MySinth::process(const ProcessArgs &args) {
 		lfo.setRate(lfo_rate);
 		float lfo_out = lfo.process(); // lfo_out range [-1,1]
 		// If LFO rate is very low, don't modulate
-		if (lfo_rate < 0.01f) lfo_out = 1.0f;	// così 
+		if (lfo_rate < 0.01f) lfo_out = 1.0f;	// così non modula nulla
 		outputs[LFO_OUT].setVoltage(5.0f * lfo_out); // LFO output scaled to +/-5V
 
 		//------------ Trivial Oscillators processing ----------------
@@ -134,8 +134,8 @@ void MySinth::process(const ProcessArgs &args) {
 		float freq2_base = freq1_base * std::pow(2.0f, detune / 12.0f); // detune in semitones
 		
 		// Apply LFO modulation to frequencies
-		float freq1 = freq1_base + lfo_out * lfo_amount;
-		float freq2 = freq2_base + lfo_out * lfo_amount;
+		float freq1 = freq1_base * std::pow(2.0f, lfo_out * lfo_amount / 12.0f);
+		float freq2 = freq2_base * std::pow(2.0f, lfo_out * lfo_amount / 12.0f);
 
 		// Waveform selection: 0 = saw, 1 = square
 		float waveSel1 = params[OSC_WAVE1].getValue();
@@ -152,8 +152,8 @@ void MySinth::process(const ProcessArgs &args) {
 		sqOsc2.setFrequency(freq2);
 
 		// Generate waveforms: 0 = saw, 1 = square, scaled to ±5V with levels
-		float out_osc1 = 5.0f * ((waveSel1 < 0.5f) ? sawOsc1.process() : sqOsc1.process()) * level1;
-		float out_osc2 = 5.0f * ((waveSel2 < 0.5f) ? sawOsc2.process() : sqOsc2.process()) * level2;
+		float out_osc1 = 5.0f * ((waveSel1 < 0.5f) ? sawOsc1.process()*level1 : sqOsc1.process()*level1);
+		float out_osc2 = 5.0f * ((waveSel2 < 0.5f) ? sawOsc2.process()*level2 : sqOsc2.process()*level2);
 
 		//-------------- White Noise output----------------
 		float out_noise = WhiteNoise.process(); //rumore bianco
@@ -192,11 +192,11 @@ void MySinth::process(const ProcessArgs &args) {
 		float final_output = vca.process(lpf_out1);	// Apply envelope to final output using VCA
 
 
-		// Set outputs
-		outputs[OUT1].setVoltage(out_osc1);	
-		outputs[OUT2].setVoltage(out_osc2);
-		outputs[OUT_MIDDLE].setVoltage(Y_in_the_middle);
-		outputs[OUT_LPF].setVoltage(lpf_out1);	// Final LPF output
+		// Set outputs. We need only the final output, others are for testing
+		/*outputs[OUT1].setVoltage(out_osc1);	// Osc1 output
+		outputs[OUT2].setVoltage(out_osc2);	// Osc2 output
+		outputs[OUT_MIDDLE].setVoltage(Y_in_the_middle); // Output somma oscillatori + rumore
+		outputs[OUT_LPF].setVoltage(lpf_out1);	// LPF output*/
 		outputs[OUTPUT_FINAL].setVoltage(final_output); // Final output after VCA with envelope
 	}
 
@@ -321,7 +321,7 @@ void MySinth::process(const ProcessArgs &args) {
 		}
 		addInput(createInput<PJ3410Port>(Vec(115, 70+75+70+40+60), module, MySinth::VOCT));
 		
-		//---------------- Outputs last at bottom
+		/*//---------------- Outputs Oscillators ------------------------
 		{
 			ATextLabel * lblOut1 = new ATextLabel(Vec(40, 260));
 			lblOut1->setText("OUT1");
@@ -341,7 +341,7 @@ void MySinth::process(const ProcessArgs &args) {
 			lblOutMiddle->setText("OUT_MID");
 			addChild(lblOutMiddle);
 		}
-		addOutput(createOutput<PJ3410Port>(Vec(180+60, 280), module, MySinth::OUT_MIDDLE));
+		addOutput(createOutput<PJ3410Port>(Vec(180+60, 280), module, MySinth::OUT_MIDDLE));*/
 	
 		//----------------- NOISE ----------------------
 		{
@@ -386,12 +386,12 @@ void MySinth::process(const ProcessArgs &args) {
 			addChild(lblCutoffIn);
 		}
 		addInput(createInput<PJ3410Port>(Vec(260+90, 210), module, MySinth::CUT_OFF_IN));
-		{
+		/*{
 			ATextLabel * lblOutLPF = new ATextLabel(Vec(250+90, 250));
 			lblOutLPF->setText("OUT_LPF");
 			addChild(lblOutLPF);
 		}
-		addOutput(createOutput<PJ3410Port>(Vec(260+90, 280), module, MySinth::OUT_LPF));
+		addOutput(createOutput<PJ3410Port>(Vec(260+90, 280), module, MySinth::OUT_LPF));*/
 
 		//----------------- Envelope Generator - VCA ----------------------
 		{

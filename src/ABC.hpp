@@ -22,46 +22,6 @@ extern Plugin *pluginInstance;
 // module widgets
 ////////////////////
 
-
-extern Model * modelAComparator;
-extern Model * modelAMuxDemux;
-extern Model * modelAClock;
-extern Model * modelASequencer;
-extern Model * modelADivider;
-extern Model * modelARandom;
-
-extern Model * modelALinADSR;
-extern Model * modelAExpADSR;
-extern Model * modelAEnvFollower;
-extern Model * modelASVFilter;
-extern Model * modelAPolySVFilter;
-extern Model * modelAModal;
-extern Model * modelAModalGUI;
-extern Model * modelATrivialOsc;
-extern Model * modelADPWOsc;
-extern Model * modelAPolyDPWOsc;
-extern Model * modelAWavefolder;
-extern Model * modelADelay;
-extern Model * modelATapeDelay;
-
-extern Model * modelABlankPanel;
-extern Model * modelAPolyXpander;
-
-extern Model * modelASimpleFilter;
-
-extern Model * modelADirac;
-extern Model * modelAKarplus;
-extern Model * modelAMultiplier;
-
-//Nostra creazione
-extern Model * modelAFIRFilter;
-extern Model * modelBench_osc;
-extern Model * modelLUTSinBank;
-
-extern Model * modelDerivator1;
-extern Model * modelRCLowPassFilter;
-extern Model * modelIntegrator1;
-
 //Progetto MySinth
 extern Model * modelMySinth;
 

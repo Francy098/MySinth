@@ -17,44 +17,6 @@ Plugin *pluginInstance;
 
 void init(rack::Plugin *p) {
 	pluginInstance = p;
-
-	p->addModel(modelAComparator);
-	p->addModel(modelAMuxDemux);
-	p->addModel(modelAClock);
-	p->addModel(modelASequencer);
-	p->addModel(modelADivider);
-	p->addModel(modelARandom);
-	
-
-	p->addModel(modelALinADSR);
-	p->addModel(modelAExpADSR);
-	p->addModel(modelAEnvFollower);
-	p->addModel(modelASVFilter);
-	p->addModel(modelAPolySVFilter);
-
-	p->addModel(modelAModal);
-	p->addModel(modelAModalGUI);
-	p->addModel(modelATrivialOsc);
-	p->addModel(modelADPWOsc);
-	p->addModel(modelAPolyDPWOsc);
-	p->addModel(modelAWavefolder);
-
-	p->addModel(modelABlankPanel);
-	p->addModel(modelAPolyXpander);
-
-	p->addModel(modelASimpleFilter);
-
-	p->addModel(modelADirac);
-	p->addModel(modelAKarplus);
-	p->addModel(modelAMultiplier);
-
-	p->addModel(modelAFIRFilter);
-	p->addModel(modelBench_osc);
-	p->addModel(modelLUTSinBank);
-	
-	p->addModel(modelDerivator1);
-	p->addModel(modelRCLowPassFilter);
-	p->addModel(modelIntegrator1);
 	
 	//Progetto MySinth
 	p->addModel(modelMySinth);
