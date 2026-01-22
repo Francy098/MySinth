@@ -1,8 +1,7 @@
 #include "ABC.hpp"
 #include "Noise_MySinth.hpp"
 #include "dsp/digital.hpp"
-#include "Osc_MySinth.hpp" //trivial oscillators
-#include "DPW.hpp"			//DPW anti-aliased oscillators
+#include "Osc_MySinth.hpp" //trivial oscillators with Parker polyBLEP anti-aliasing filter on transitions
 #include "LFO_MySinth.hpp"
 #include "LPF_MySinth.hpp"
 #include "ADSR_MySinth.hpp"
@@ -59,17 +58,17 @@ struct MySinth : Module {
 
 	MySinth() { //---------------- Finire a configurare i parametri (potenziometri...)
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS,NUM_LIGHTS);
-		configParam(DETUNE, -12.0f, 12.0f, 0.0f, "DETUNE"); // Da -12 a 12 semitoni
-		configParam(PITCH, 20.0f, 20000.0f, 440.0f, "PITCH"); // base frequency
+		configParam(DETUNE, -12.0f, 12.0f, 0.0f, "DETUNE","semitones"); // Da -12 a 12 semitoni
+		configParam(PITCH, 20.0f, 20000.0f, 440.0f, "PITCH"," Hz"); // base frequency
 		configParam(LEVEL1, 0.0f, 1.0f, 1.0f, "LEVEL1");    //Livello di uscita osc1
 		configParam(LEVEL2, 0.0f, 1.0f, 1.0f, "LEVEL2");    //Livello di uscita osc2
 		configParam(OSC_WAVE1, 0.0f, 1.0f, 0.0f, "Waveform"); // selettore forma d'onda (0=saw, 1=square)
 		configParam(OSC_WAVE2, 0.0f, 1.0f, 0.0f, "Waveform"); // selettore forma d'onda (0=saw, 1=square)
-		configParam(RATE, 0.0f, 10.0f, 1.0f, "LFO RATE");
+		configParam(RATE, 0.0f, 10.0f, 1.0f, "LFO RATE"," Hz");
         configParam(LFO_AMOUNT, 0.0f, 1.0f, 1.0f, "LFO AMOUNT"); // profondità di modulazione
 		configParam(NOISE_LEVEL, 0.0f, 1.0f, 1.0f, "NOISE LEVEL");
 		configParam(LFO_AMOUNT_NOISE, 0.0f, 1.0f, 1.0f, "LFO AMOUNT NOISE");
-		configParam(CUT_OFF, 20.0f, 20000.0f, 1000.0f, "LPF CUTOFF");	// Cutoff LPF
+		configParam(CUT_OFF, 20.0f, 20000.0f, 1000.0f, "LPF CUTOFF"," Hz");	// Cutoff LPF
 		configParam(RESONANCE, 0.0f, 0.99f,	0.5f, "LPF RESONANCE"); // Evitare 1.0f per stabilità
 		configParam(ATTACK_PARAM, 0.f, 1.f, 0.5f, "ATTACK");
 		configParam(DECAY_PARAM, 0.f, 1.f, 0.5f, "DECAY");
@@ -79,18 +78,11 @@ struct MySinth : Module {
 		sampleRate = 44100.0f;
 		lfo.reset(0.0); // reset phase to 0
 		envelopeGen.reset();
-
-		// Inizializza DPW oscillators con ordine 2 per buon compromesso qualità/performance
-		dpw1.onDPWOrderChange(DPW_2);
-		dpw2.onDPWOrderChange(DPW_2);
 	}
 
 	void onSampleRateChange() override {
 		sampleRate = APP->engine->getSampleRate();
 		Ts = 1.f / sampleRate;
-		// Ricalcola parametri DPW quando cambia il sample rate
-		dpw1.paramsCompute();
-		dpw2.paramsCompute();
 	}
 	
 	float Ts= 1.f/Fs; //Periodo campionamento
@@ -100,7 +92,6 @@ struct MySinth : Module {
 
 	MySinthOsc::SawOsc sawOsc1, sawOsc2;	// Sawtooth Oscillator instances (trivial)
 	MySinthOsc::SquareOsc sqOsc1, sqOsc2;	// Square Oscillator instances (trivial)
-	DPW<float> dpw1, dpw2;					// DPW anti-aliased oscillators
 	LowFrequencyOscillator::MySinthLFO lfo; // LFO instance (value)
 	NoiseGenerator::WhiteNoise WhiteNoise;	 // White Noise instance
 	StateVariableFilter::StateVarFil SVFilter1, SVFilter2; // LPF instance (2 in series)
@@ -133,7 +124,7 @@ void MySinth::process(const ProcessArgs &args) {
 		lfo.setRate(lfo_rate);
 		float lfo_out = lfo.process(); // lfo_out range [-1,1]
 		// If LFO rate is very low, don't modulate
-		if (lfo_rate < 0.01f) lfo_out = 0.0f;
+		if (lfo_rate < 0.01f) lfo_out = 1.0f;	// così 
 		outputs[LFO_OUT].setVoltage(5.0f * lfo_out); // LFO output scaled to +/-5V
 
 		//------------ Trivial Oscillators processing ----------------
@@ -143,8 +134,8 @@ void MySinth::process(const ProcessArgs &args) {
 		float freq2_base = freq1_base * std::pow(2.0f, detune / 12.0f); // detune in semitones
 		
 		// Apply LFO modulation to frequencies
-		float freq1 = freq1_base * (1.0f + lfo_out * lfo_amount);
-		float freq2 = freq2_base * (1.0f + lfo_out * lfo_amount);
+		float freq1 = freq1_base + lfo_out * lfo_amount;
+		float freq2 = freq2_base + lfo_out * lfo_amount;
 
 		// Waveform selection: 0 = saw, 1 = square
 		float waveSel1 = params[OSC_WAVE1].getValue();
@@ -164,18 +155,6 @@ void MySinth::process(const ProcessArgs &args) {
 		float out_osc1 = 5.0f * ((waveSel1 < 0.5f) ? sawOsc1.process() : sqOsc1.process()) * level1;
 		float out_osc2 = 5.0f * ((waveSel2 < 0.5f) ? sawOsc2.process() : sqOsc2.process()) * level2;
 
-		/*// Set waveform types for DPW oscillators
-		dpw1.waveType = (waveSel1 < 0.5f) ? TYPE_SAW : TYPE_SQU;	
-		dpw2.waveType = (waveSel2 < 0.5f) ? TYPE_SAW : TYPE_SQU;
-		
-		// Set pitch (normalized frequency: freq * sampleTime)
-		dpw1.setPitch(freq1); // pitch = frequency in Hz * sample time (1/sampleRate)
-		dpw2.setPitch(freq2);
-		
-		// Generate DPW anti-aliased waveforms, scaled to +/-5V with respective levels
-		float out_osc1 = 5.0f * dpw1.process() * level1;
-		float out_osc2 = 5.0f * dpw2.process() * level2;*/
-
 		//-------------- White Noise output----------------
 		float out_noise = WhiteNoise.process(); //rumore bianco
 		out_noise += out_noise * lfo_out * lfo_amount_noise;	// Modulation of noise level with LFO
@@ -186,16 +165,17 @@ void MySinth::process(const ProcessArgs &args) {
 		// Modulation of cutoff with input CV
 		if (inputs[CUT_OFF_IN].isConnected()) cutoff += rescale(inputs[CUT_OFF_IN].getVoltage(), -10.0f, 10.0f, 20.0f, 20000.0f);
 		// Aggiorna i parametri del filtro, solo se sono cambiati i parametri cutoff o resonance
-		if (cutoff != SVFilter1.cutoff_old || resonance != SVFilter1.resonance_old) SVFilter1.updateParameters(cutoff, resonance, sampleRate);
-		if (cutoff != SVFilter2.cutoff_old || resonance != SVFilter2.resonance_old) SVFilter2.updateParameters(cutoff, resonance, sampleRate);
+		if (cutoff != SVFilter1.cutoff_old || resonance != SVFilter1.resonance_old) 
+			SVFilter1.updateParameters(cutoff, resonance, sampleRate);
+		//if (cutoff != SVFilter2.cutoff_old || resonance != SVFilter2.resonance_old) SVFilter2.updateParameters(cutoff, resonance, sampleRate);
 		//Salviamo i vecchi valori per il prossimo ciclo
 		SVFilter1.cutoff_old = cutoff;
-		SVFilter2.cutoff_old = cutoff;
+		//SVFilter2.cutoff_old = cutoff;
 		SVFilter1.resonance_old = resonance;
-		SVFilter2.resonance_old = resonance;
+		//SVFilter2.resonance_old = resonance;
 		// Processa il segnale attraverso due LPF in serie
 		float lpf_out1 = SVFilter1.process(Y_in_the_middle);
-		float lpf_out2 = SVFilter2.process(lpf_out1);
+		//float lpf_out2 = SVFilter2.process(lpf_out1);
 
 		//--------------- Envelope Generator processing ----------------
 		envelopeGen.setAttack(att);
@@ -209,14 +189,14 @@ void MySinth::process(const ProcessArgs &args) {
 		//--------------- VCA processing ----------------
 		vca.setLevel(1.0f); // level knob at max (perché non c'è nella definizione del modulo)
 		vca.setCv(env_out / 1.2f); // Set CV-Control Voltage normalize envelope to [0,1]
-		float final_output = vca.process(lpf_out2);	// Apply envelope to final output using VCA
+		float final_output = vca.process(lpf_out1);	// Apply envelope to final output using VCA
 
 
 		// Set outputs
 		outputs[OUT1].setVoltage(out_osc1);	
 		outputs[OUT2].setVoltage(out_osc2);
 		outputs[OUT_MIDDLE].setVoltage(Y_in_the_middle);
-		outputs[OUT_LPF].setVoltage(lpf_out2);	// Final LPF output
+		outputs[OUT_LPF].setVoltage(lpf_out1);	// Final LPF output
 		outputs[OUTPUT_FINAL].setVoltage(final_output); // Final output after VCA with envelope
 	}
 
