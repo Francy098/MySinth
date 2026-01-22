@@ -166,8 +166,9 @@ void MySinth::process(const ProcessArgs &args) {
 		float Y_in_the_middle = (out_osc1 + out_osc2) * 0.5f + out_noise*noise_level; // somma dei due oscillatori e del rumore per il livello rumore
 
 		//--------------- LPF processing ----------------
-		// Modulation of cutoff with input CV
-		if (inputs[CUT_OFF_IN].isConnected()) cutoff += rescale(inputs[CUT_OFF_IN].getVoltage(), -10.0f, 10.0f, 20.0f, 20000.0f);
+		// Modulation of cutoff with input CV (true V/Oct scaling)
+		cutoff = (inputs[CUT_OFF_IN].isConnected()) ? cutoff * std::pow(2.0f, inputs[CUT_OFF_IN].getVoltage()) : cutoff;	//tolto il /12 altrimenti ci vorrebbero 12V per un'ottava, così invece ne basta 1V
+
 		// Aggiorna i parametri del filtro, solo se sono cambiati i parametri cutoff o resonance
 		if (cutoff != SVFilter.cutoff_old || resonance != SVFilter.resonance_old) 
 			SVFilter.updateParameters(cutoff, resonance, sampleRate);
