@@ -167,8 +167,9 @@ void MySinth::process(const ProcessArgs &args) {
 
 		//--------------- LPF processing ----------------
 		// Modulation of cutoff with input CV (true V/Oct scaling)
-		cutoff = (inputs[CUT_OFF_IN].isConnected()) ? cutoff * std::pow(2.0f, inputs[CUT_OFF_IN].getVoltage()) : cutoff;	//tolto il /12 altrimenti ci vorrebbero 12V per un'ottava, così invece ne basta 1V
-
+		cutoff = (inputs[CUT_OFF_IN].isConnected()) ? cutoff * std::pow(2.0f, inputs[CUT_OFF_IN].getVoltage()) : cutoff;	//tolto il .../12 altrimenti ci vorrebbero 12V per un'ottava, così invece ne basta 1V
+		//In questo modo il cutoff viene modularo in V/Oct in maniera esponenziale
+		
 		// Aggiorna i parametri del filtro, solo se sono cambiati i parametri cutoff o resonance
 		if (cutoff != SVFilter.cutoff_old || resonance != SVFilter.resonance_old) 
 			SVFilter.updateParameters(cutoff, resonance, sampleRate);
