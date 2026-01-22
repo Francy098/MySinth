@@ -1,3 +1,7 @@
+//============================================================================
+//------------ MySinth.cpp - Progetto DCMPSS di Francesco Pierucci --------------//	
+//============================================================================
+
 #include "ABC.hpp"
 #include "Noise_MySinth.hpp"
 #include "dsp/digital.hpp"
