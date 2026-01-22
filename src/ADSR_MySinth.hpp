@@ -25,7 +25,8 @@ public:
     void setAttack(float attackNorm)  { attackNorm_  = clamp01(attackNorm); } //clamp normalizza il valore tra 0 e 1
     void setDecay(float decayNorm)    { decayNorm_   = clamp01(decayNorm); }
     void setSustain(float sustainNorm){ sustainNorm_ = clamp01(sustainNorm); }
-    void setRelease(float releaseNorm){ releaseNorm_ = clamp01(releaseNorm); }
+    void setRelease(float releaseNorm){ releaseNorm_ = clamp01(releaseNorm
+    ); }
 
     // Processa un campione. gateOn true = nota tenuta, false = release
     // Restituisce l'envelope in [0, 1.2] circa (poi scala esternamente)

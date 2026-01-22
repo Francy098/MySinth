@@ -29,8 +29,8 @@ namespace StateVariableFilter {
             cutoff = std::max(10.0f, std::min(cutoff, sampleRate * 0.45f)); // Evita aliasing oltre Nyquist
         
             // Calcolo coefficiente g con pre-warping corretto per SVF a topologia TPT
-            float wc = 2.0f * M_PI * cutoff / sampleRate;
-            g = std::tan(wc / 2.0f);
+            float wc = 2.0f * M_PI * cutoff;
+            g = std::tan(wc / (2.0f * sampleRate));
             // Clamp g per evitare instabilità numerica
             g = std::min(g, 1.0f);
         

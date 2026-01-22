@@ -52,6 +52,7 @@ public:
 			output -= polyBLEP(t) * 2.0;  // *2.0 for amplitude correction
 		}
 		
+		
 		return static_cast<float>(output);
 	}
 	
