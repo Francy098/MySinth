@@ -10,7 +10,7 @@ namespace VCAGenerator {
 class VCA {
 public:
     // level e cv sono normalizzati in [0,1]
-    void setLevel(float level) { level_ = clamp01(level); } // knob
+    void setLevel(float level) { level_ = clamp01(level); }
     void setCv(float cv) { cv_ = clamp01(cv); } // CV-Control Voltage
     void setExpMode(bool exp) { expMode_ = exp; }   // exponential mode on/off
 

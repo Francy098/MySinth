@@ -7,8 +7,6 @@ namespace LowFrequencyOscillator {
 
     class MySinthLFO {
 public:
-    // Backwards-compatible wrapper: same API as previous LFO class
-public:
     MySinthLFO() {
         sampleRate = 44100.0;
         rateHz = 1.0;
@@ -24,7 +22,7 @@ public:
 
     // Set rate in Hz (single parameter 'rate')
     void setRate(double hz) {
-        rateHz = (hz >= 0.0) ? hz : 0.0;
+        rateHz = (hz >= 0.0) ? hz : 0.0; //avoid negative rates
         updatePhaseInc();
     }
 

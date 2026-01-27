@@ -17,11 +17,13 @@ namespace NoiseGenerator {
 
         public:
             float process() {
-            const float gain = 5.f / std::sqrt(2.f);
+			static constexpr float gain = 3.53553390593f; // 5 / sqrt(2)
             float white = dist(gen);
             return white * gain;
         }
-
+        //Il gain serve per scalare il rumore bianco in modo che abbia lo stesso RMS di un'onda sinusoidale con ampiezza 5V.
+        // Infatti, l'RMS di un'onda sinusoidale è A/sqrt(2), quindi per un'ampiezza di 5V, l'RMS è 5/sqrt(2) ≈ 3.5355V.
+        // Moltiplicando il rumore bianco (RMS=1V) per questo fattore, otteniamo un segnale con lo stesso livello RMS=3.5355V.
     };
 }
 

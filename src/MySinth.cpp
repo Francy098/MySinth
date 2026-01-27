@@ -130,7 +130,7 @@ void MySinth::process(const ProcessArgs &args) {
 		if (lfo_rate < 0.01f) lfo_out = 1.0f;	// If LFO rate is very low, don't modulate
 		outputs[LFO_OUT].setVoltage(5.0f * lfo_out); // LFO output scaled to +/-5V
 
-		//------------ Trivial Oscillators processing ----------------
+		//------------ Oscillators processing ----------------
         // Compute frequencies with LFO modulation
 		// Voct input is volts per octave: 1V -> octave -> freq multiplier = 2^(Voct) + Apply LFO modulation to frequencies
 		float freq1 = pitch * std::pow(2.0f, Voct_input + lfo_out * lfo_amount / 12.0f); // base frequency osc1

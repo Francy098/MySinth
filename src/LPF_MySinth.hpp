@@ -6,7 +6,7 @@
 namespace StateVariableFilter {
 /**
  *  Filtro a variabili di stato (SVF) di secondo ordine.
- * Implementazione basata sulla topologia TPT (Topology Preserving Transform).
+ * Implementazione basata sulla topologia TPT (Topology Preserving Transform) o anche detto stile Zvalishin.
  * NOTE: resonance deve essere in [0.0f, 0.99f] per stabilità (perché G<1).
  */
     class StateVarFil {
@@ -36,15 +36,10 @@ namespace StateVariableFilter {
         
             // Mappatura risonanza (damping): 1.0f - resonance produce un damping pulito.
             // k controlla il feedback del filtro, deve restare positivo e < 2.0
-            resonance = std::max(0.0f, std::min(resonance, 0.99f)); // Clamp di sicurezza
+            resonance = std::max(0.0f, std::min(resonance, 0.99f)); // Clamp di sicurezza: risonante e stabile
             k = 2.0f - 2.0f * resonance;
         }
-       /* enum class FilterMode {
-            LOW_PASS,
-            HIGH_PASS,
-            BAND_PASS,
-            NOTCH
-        };*/    
+  
     private:
         // Stati interni (memoria degli integratori)
         float s1 = 0.0f;
@@ -54,8 +49,6 @@ namespace StateVariableFilter {
         float g = 0.0f; // Coefficiente di frequenza
         float k = 0.0f; // Coefficiente di risonanza
         //float r = 0.0f; // Coefficiente di smorzamento (non usato in questa implementazione)
-
-
 
 
     public:
@@ -87,6 +80,12 @@ namespace StateVariableFilter {
 /*    float process(float input, FilterMode mode = FilterMode::LOW_PASS) {
 
 ---
+       /* enum class FilterMode {
+            LOW_PASS,
+            HIGH_PASS,
+            BAND_PASS,
+            NOTCH
+        };
 ---
 
         // Switch per restituire il segnale desiderato
@@ -98,3 +97,4 @@ namespace StateVariableFilter {
             default:                    return Yl;
         }
             */
+
