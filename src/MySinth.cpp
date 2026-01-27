@@ -123,23 +123,18 @@ void MySinth::process(const ProcessArgs &args) {
 		float rel = params[RELEASE_PARAM].getValue();
 
 
-		//------------ LFO processing (use member lfo)------------
+		//------------ LFO processing --------------
 		lfo.setSampleRate(args.sampleRate);
 		lfo.setRate(lfo_rate);
 		float lfo_out = lfo.process(); // lfo_out range [-1,1]
-		// If LFO rate is very low, don't modulate
-		if (lfo_rate < 0.01f) lfo_out = 1.0f;	// così non modula nulla
+		if (lfo_rate < 0.01f) lfo_out = 1.0f;	// If LFO rate is very low, don't modulate
 		outputs[LFO_OUT].setVoltage(5.0f * lfo_out); // LFO output scaled to +/-5V
 
 		//------------ Trivial Oscillators processing ----------------
         // Compute frequencies with LFO modulation
-		// Voct input is volts per octave: 1V -> octave -> freq multiplier = 2^(Voct)
-		float freq1_base = pitch * std::pow(2.0f, Voct_input); // base frequency osc1
-		float freq2_base = freq1_base * std::pow(2.0f, detune / 12.0f); // detune in semitones
-		
-		// Apply LFO modulation to frequencies
-		float freq1 = freq1_base * std::pow(2.0f, lfo_out * lfo_amount / 12.0f);
-		float freq2 = freq2_base * std::pow(2.0f, lfo_out * lfo_amount / 12.0f);
+		// Voct input is volts per octave: 1V -> octave -> freq multiplier = 2^(Voct) + Apply LFO modulation to frequencies
+		float freq1 = pitch * std::pow(2.0f, Voct_input + lfo_out * lfo_amount / 12.0f); // base frequency osc1
+		float freq2 = freq1 * std::pow(2.0f, detune / 12.0f); // detune in semitones
 
 		// Waveform selection: 0 = saw, 1 = square
 		float waveSel1 = params[OSC_WAVE1].getValue();
@@ -156,14 +151,15 @@ void MySinth::process(const ProcessArgs &args) {
 		sqOsc2.setFrequency(freq2);
 
 		// Generate waveforms: 0 = saw, 1 = square, scaled to ±5V with levels
-		float out_osc1 = 5.0f * ((waveSel1 < 0.5f) ? sawOsc1.process()*level1 : sqOsc1.process()*level1);
-		float out_osc2 = 5.0f * ((waveSel2 < 0.5f) ? sawOsc2.process()*level2 : sqOsc2.process()*level2);
+		float out_osc1 = 5.0f * level1 * ((waveSel1 < 0.5f) ? sawOsc1.process() : sqOsc1.process());
+		float out_osc2 = 5.0f * level2 * ((waveSel2 < 0.5f) ? sawOsc2.process() : sqOsc2.process());
 
 		//-------------- White Noise output----------------
-		float out_noise = WhiteNoise.process(); //rumore bianco
-		out_noise += out_noise * lfo_out * lfo_amount_noise;	// Modulation of noise level with LFO
-		//Output in the middle (somma di oscillatori e rumore)
-		float Y_in_the_middle = (out_osc1 + out_osc2) * 0.5f + out_noise*noise_level; // somma dei due oscillatori e del rumore per il livello rumore
+		float out_noise = WhiteNoise.process(); // White noise output in [-1,1]
+		out_noise += out_noise * lfo_out * lfo_amount_noise; // Modulation of noise level with LFO
+		
+		//Output in the middle (sum of oscillators and noise)
+		float Y_in_the_middle = (out_osc1 + out_osc2) * 0.5f + out_noise*noise_level; // sum of two oscillators and noise scaled by noise level
 
 		//--------------- LPF processing ----------------
 		// Modulation of cutoff with input CV (true V/Oct scaling)
@@ -176,8 +172,8 @@ void MySinth::process(const ProcessArgs &args) {
 		//Salviamo i vecchi valori per il prossimo ciclo
 		SVFilter.cutoff_old = cutoff;
 		SVFilter.resonance_old = resonance;
-		// Processa il segnale attraverso due LPF in serie
-		float lpf_out1 = SVFilter.process(Y_in_the_middle);
+		// Process the signal through the SVF filter
+		float lpf_out = SVFilter.process(Y_in_the_middle);
 
 		//--------------- Envelope Generator processing ----------------
 		envelopeGen.setAttack(att);
@@ -191,14 +187,14 @@ void MySinth::process(const ProcessArgs &args) {
 		//--------------- VCA processing ----------------
 		vca.setLevel(1.0f); // level knob at max (perché non c'è nella definizione del modulo)
 		vca.setCv(env_out / 1.2f); // Set CV-Control Voltage normalize envelope to [0,1]
-		float final_output = vca.process(lpf_out1);	// Apply envelope to final output using VCA
+		float final_output = vca.process(lpf_out);	// Apply envelope to final output using VCA
 
 
 		// Set outputs. We need only the final output, others are for testing
 		/*outputs[OUT1].setVoltage(out_osc1);	// Osc1 output
 		outputs[OUT2].setVoltage(out_osc2);	// Osc2 output
 		outputs[OUT_MIDDLE].setVoltage(Y_in_the_middle); // Output somma oscillatori + rumore
-		outputs[OUT_LPF].setVoltage(lpf_out1);	// LPF output*/
+		outputs[OUT_LPF].setVoltage(lpf_out);	// LPF output*/
 		outputs[OUTPUT_FINAL].setVoltage(final_output); // Final output after VCA with envelope
 	}
 
