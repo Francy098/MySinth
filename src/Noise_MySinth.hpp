@@ -18,8 +18,10 @@ namespace NoiseGenerator {
         public:
             float process() {
 			static constexpr float gain = 3.53553390593f; // 5 / sqrt(2)
+			static constexpr float max_voltage = 5.0f; // Limite di sicurezza per evitare valori estremi (±inf) - mantiene coerenza con oscillatori a ±5V
             float white = dist(gen);
-            return white * gain;
+            float voltage = white * gain;
+            return std::min(std::max(voltage, -max_voltage), max_voltage);
         }
         //Il gain serve per scalare il rumore bianco in modo che abbia lo stesso RMS di un'onda sinusoidale con ampiezza 5V.
         // Infatti, l'RMS di un'onda sinusoidale è A/sqrt(2), quindi per un'ampiezza di 5V, l'RMS è 5/sqrt(2) ≈ 3.5355V.

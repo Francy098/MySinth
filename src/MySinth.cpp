@@ -159,21 +159,16 @@ void MySinth::process(const ProcessArgs &args) {
 		out_noise += out_noise * lfo_out * lfo_amount_noise; // Modulation of noise level with LFO
 		
 		//Output in the middle (sum of oscillators and noise)
-		float Y_in_the_middle = (out_osc1 + out_osc2) * 0.5f + out_noise*noise_level; // sum of two oscillators and noise scaled by noise level
+		float Y_in_the_middle = ((out_osc1 + out_osc2) * 0.5f + out_noise*noise_level)*0.5f; // sum of two oscillators and noise scaled by noise level
+		//Lo scalamento a 0.5 serve per evitare clipping quando tutti i segnali sono al massimo, cioè 5V osc + 5V noise = 10V > ±5V
 
 		//--------------- LPF processing ----------------
 		// Modulation of cutoff with input CV (true V/Oct scaling)
 		cutoff = (inputs[CUT_OFF_IN].isConnected()) ? cutoff * std::pow(2.0f, inputs[CUT_OFF_IN].getVoltage()) : cutoff;	//tolto il .../12 altrimenti ci vorrebbero 12V per un'ottava, così invece ne basta 1V
 		//In questo modo il cutoff viene modularo in V/Oct in maniera esponenziale
-		
-		// Aggiorna i parametri del filtro, solo se sono cambiati i parametri cutoff o resonance
-		if (cutoff != SVFilter.cutoff_old || resonance != SVFilter.resonance_old) 
-			SVFilter.updateParameters(cutoff, resonance, sampleRate);
-		//Salviamo i vecchi valori per il prossimo ciclo
-		SVFilter.cutoff_old = cutoff;
-		SVFilter.resonance_old = resonance;
+
 		// Process the signal through the SVF filter
-		float lpf_out = SVFilter.process(Y_in_the_middle);
+		float lpf_out = SVFilter.process(Y_in_the_middle, cutoff, resonance, sampleRate);
 
 		//--------------- Envelope Generator processing ----------------
 		envelopeGen.setAttack(att);

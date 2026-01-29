@@ -18,6 +18,20 @@ namespace StateVariableFilter {
             s1 = 0.0f;
             s2 = 0.0f;
             }
+
+    private:
+        // Stati interni (memoria degli integratori)
+        float s1 = 0.0f;
+        float s2 = 0.0f;
+
+        // Coefficienti calcolati
+        float g = 0.0f; // Coefficiente di frequenza
+        float k = 0.0f; // Coefficiente di risonanza
+        //float r = 0.0f; // Coefficiente di smorzamento (non usato in questa implementazione)
+        
+        //Ci serviranno in MySinth per salvare i vecchi valori di cutoff e resonance e controllare se sono cambiati
+        float cutoff_old = 0.0f;
+        float resonance_old = 0.0f;
         /**
         * Calcola i coefficienti. Da chiamare quando cambiano i parametri.
         * @param cutoff Frequenza in Hz (es. 20.0f a 18000.0f)
@@ -38,22 +52,19 @@ namespace StateVariableFilter {
             // k controlla il feedback del filtro, deve restare positivo e < 2.0
             resonance = std::max(0.0f, std::min(resonance, 0.99f)); // Clamp di sicurezza: risonante e stabile
             k = 2.0f - 2.0f * resonance;
+
+            //Salviamo i vecchi valori per il prossimo ciclo
+            cutoff_old = cutoff;
+            resonance_old = resonance;
         }
-  
-    private:
-        // Stati interni (memoria degli integratori)
-        float s1 = 0.0f;
-        float s2 = 0.0f;
-
-        // Coefficienti calcolati
-        float g = 0.0f; // Coefficiente di frequenza
-        float k = 0.0f; // Coefficiente di risonanza
-        //float r = 0.0f; // Coefficiente di smorzamento (non usato in questa implementazione)
-
 
     public:
     //Processa un singolo campione audio.
-    float process(float input) {
+    float process(float input,float cutoff,float resonance,float sampleRate) {
+
+        // Aggiorna i parametri del filtro, solo se sono cambiati i parametri cutoff o resonance
+        if (cutoff != cutoff_old || resonance != resonance_old) updateParameters(cutoff, resonance, sampleRate);
+        
         // Risoluzione analitica del loop di feedback (Zero-Delay) con formule corrette per SVF TPT
         float d = 1.0f + g * k + g * g; // Denominatore comune
         float a = k + g;    
@@ -65,10 +76,6 @@ namespace StateVariableFilter {
         
         return Yl;
     }
-
-    //Ci serviranno in MySinth per salvare i vecchi valori di cutoff e resonance e controllare se sono cambiati
-    float cutoff_old = 0.0f;
-    float resonance_old = 0.0f;
 };
 
 } // namespace StateVariableFilter
